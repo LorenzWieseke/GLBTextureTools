@@ -132,7 +132,7 @@ class Help_Operator(bpy.types.Operator):
         if help_clicked:    
             self.help_draw.set_image(self.image_path)
             self.help_draw.add_handle()
-            self.draw_image(50)
+            self.draw_image(50,30)
         else:
             self.help_draw.remove_handle()
     
@@ -144,13 +144,13 @@ class Help_Operator(bpy.types.Operator):
         if event.type == 'MOUSEMOVE':
             try:
                 context.area.tag_redraw()
-                self.draw_image(50)
+                self.draw_image(50,30)
             except:
                 pass
 
         return {'PASS_THROUGH'}
 
-    def draw_image(self,y_offset):
+    def draw_image(self,margin_top, margin_buttom):
         # positioning
         try:
             view = [area for area in bpy.context.screen.areas if area.type == 'VIEW_3D'][0]
@@ -158,12 +158,25 @@ class Help_Operator(bpy.types.Operator):
 
             image = self.help_draw.get_image()
             if image is not None:
-                x = view.width-(region.width+image.size[0])
-                y = view.height-(image.size[1] + y_offset)
+                x1 = view.width-(region.width+image.size[0])
+                y1 = view.height-(image.size[1]+margin_top)
+                x2 = x1+image.size[0]
+                y2 = y1+image.size[1]
 
-                self.help_draw.update(x,y,x+image.size[0],y+image.size[1])
-        
+                # prevent image bigger than view
+                if y1 < 0:
+                    diff = y1
+                    y1 = 0 + margin_buttom
+                    x1 -= diff
+                if x1 < 0:
+                    diff = x1
+                    x1 = 0
+                    y1 -= diff
+
+                self.help_draw.update(x1,y1,x2,y2)
+
         except:
              pass
+
 
 
