@@ -16,7 +16,7 @@ bl_info = {
     "author": "Lorenz Wieseke",
     "description": "",
     "blender": (2, 80, 1),
-    "version": (0,0,1),
+    "version": (0,0,2),
     "location": "",
     "warning": "",
     "category": "Generic"

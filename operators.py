@@ -62,7 +62,7 @@ class CleanTexturesOperator(bpy.types.Operator):
 
     def execute(self, context):
         for image in bpy.data.images:
-            if not image.users:
+            if not image.users or list(image.size) == [0,0]:
                 bpy.data.images.remove(image)
         return {'FINISHED'}
 
