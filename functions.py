@@ -22,6 +22,13 @@ def select_obj_by_mat(self,mat):
             if mat in object_materials:
                 select_object(self,obj)
 
+def set_image_in_image_editor(self,context): 
+    scene = self
+    sel_texture = bpy.data.images[scene.texture_index]
+
+    for area in context.screen.areas :
+        if area.type == 'IMAGE_EDITOR' :
+                area.spaces.active.image = sel_texture
 
 def save_image(image):
 
@@ -128,8 +135,8 @@ def get_pbr_inputs(pbr_node):
     return pbr_inputs    
 
 def find_node_by_type(nodes, node_type):
-    textureNodes = [n for n in nodes if n.type == node_type]
-    return textureNodes
+    nodes_found = [n for n in nodes if n.type == node_type]
+    return nodes_found
 
 def find_node_by_type_recusivly(material, note_to_start, node_type, del_nodes_inbetween=False):
     nodes = material.node_tree.nodes
@@ -190,8 +197,7 @@ def apply_ao_toggle(self,context):
             else:
                 pbr_node = find_node_by_type(nodes,Node_Types.pbr_node)[0]   
                 remove_node(mat,"Emission Bake")
-                reconnect_PBR(mat, pbr_node)
-        
+                reconnect_PBR(mat, pbr_node)        
 
 def emission_setup(material, node_output):
     nodes = material.node_tree.nodes

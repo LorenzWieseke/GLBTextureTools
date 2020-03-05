@@ -38,7 +38,7 @@ bpy.types.Scene.help_tex_tools = BoolProperty(default=False,update=run_help_oper
 bpy.types.Scene.need_unpack = BoolProperty(default=False)
 bpy.types.Scene.toggle_ao = BoolProperty(default=False,update=functions.apply_ao_toggle)
 bpy.types.Scene.bake_settings = PointerProperty(type=Bake_Settings)  
-bpy.types.Scene.texture_index = IntProperty(name = "Index for Texture List", default = 0)
+bpy.types.Scene.texture_index = IntProperty(name = "Index for Texture List", default = 0, update=functions.set_image_in_image_editor)
 bpy.types.Image.org_filepath = StringProperty()
 bpy.types.Image.org_image_name = StringProperty()
 
@@ -47,18 +47,6 @@ def clearConsole():
     os.system('cls')
 
 clearConsole()
-
-# class TextureToolsPanel(bpy.types.Panel):
-#     bl_idname = "TEXTURETOOLS_PT_parent_panel"
-#     bl_label = "Texture Tools"
-#     bl_space_type = "VIEW_3D"
-#     bl_region_type = "UI"
-#     bl_category = 'GLB Texture Tools'
-
-#     def draw(self, context):
-#         layout = self.layout
-#         scene = context.scene
- 
               
 class ResolutionPanel(bpy.types.Panel):
     bl_idname = "RESOLTUION_PT_scale_image_panel"
