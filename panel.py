@@ -17,7 +17,13 @@ bpy.types.Scene.img_bake_size = EnumProperty(
         ('2048', '2048', 'Set image size to 2048'),
         ('4096', '4096', 'Set image size to 4096'),
     ])
-    
+
+class UV_Settings(bpy.types.PropertyGroup):
+    uv_slot: IntProperty(default=1)
+    uv_name: StringProperty(default="AO")
+
+bpy.utils.register_class(UV_Settings)
+
 class Bake_Settings(bpy.types.PropertyGroup):  
     open_bake_settings_menu: BoolProperty(default = False)    
     mute_texture_nodes: BoolProperty(default = True)
@@ -33,14 +39,25 @@ bpy.utils.register_class(Bake_Settings)
 def run_help_operator(self,context):
     bpy.ops.scene.help('INVOKE_DEFAULT')
 
-bpy.types.Scene.open_sel_mat_menu = BoolProperty(default=False)
+
+# HELP PANEL PROPERTIES
 bpy.types.Scene.help_tex_tools = BoolProperty(default=False,update=run_help_operator)
+
+# TEXTURE PANEL PROPERTIES
+bpy.types.Scene.open_sel_mat_menu = BoolProperty(default=False)
 bpy.types.Scene.need_unpack = BoolProperty(default=False)
 bpy.types.Scene.toggle_ao = BoolProperty(default=False,update=functions.apply_ao_toggle)
-bpy.types.Scene.bake_settings = PointerProperty(type=Bake_Settings)  
+bpy.types.Scene.bake_settings = PointerProperty(type=Bake_Settings)
 bpy.types.Scene.texture_index = IntProperty(name = "Index for Texture List", default = 0, update=functions.set_image_in_image_editor)
+
+# UV PROPERTIES
+bpy.types.Scene.uv_settings = PointerProperty(type=UV_Settings)
+
+# IMAGE PROPERTIES
 bpy.types.Image.org_filepath = StringProperty()
 bpy.types.Image.org_image_name = StringProperty()
+
+
 
 def clearConsole():
     print("console cleared")
@@ -78,12 +95,12 @@ class NodeToTexturePanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        set = bpy.context.scene.bake_settings
+        bake_settings = bpy.context.scene.bake_settings
     
         row = layout.row()
-        row.prop(scene.bake_settings, 'open_bake_settings_menu', text="Bake Settings", icon = 'TRIA_DOWN' if set.open_bake_settings_menu else 'TRIA_RIGHT' )
+        row.prop(scene.bake_settings, 'open_bake_settings_menu', text="Bake Settings", icon = 'TRIA_DOWN' if bake_settings.open_bake_settings_menu else 'TRIA_RIGHT' )
         
-        if set.open_bake_settings_menu:
+        if bake_settings.open_bake_settings_menu:
             box = layout.box()                
 
             col = box.column(align = True)
@@ -203,6 +220,29 @@ class TextureSelectionPanel(bpy.types.Panel):
         row.operator("image.clean_textures",text="Clean Textures",icon = 'ORPHAN_DATA')
         row.operator("material.clean_materials",text="Clean Materials",icon = 'ORPHAN_DATA')
 
+class UVPanel(bpy.types.Panel):
+    bl_idname = "GLBTEXTOOLS_PT_UV_panel"
+    bl_label = "UV"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "GLB Texture Tools"
+    bl_order = 3
+
+    def draw(self, context):
+        scene = context.scene
+        layout = self.layout
+
+        uv_settings = context.scene.uv_settings
+        box = layout.box()
+
+        row = box.row()      
+        row.prop(uv_settings,"uv_name", text="UV Name")
+        row.prop(uv_settings,"uv_slot", text="UV Slot")
+        row = box.row()  
+        row.operator("object.add_uv",text="Add UV",icon = 'ORPHAN_DATA').uv_name = uv_settings.uv_name
+        row.operator("object.remove_uv",text="Remove UV",icon = 'ORPHAN_DATA').uv_slot = uv_settings.uv_slot
+        row.operator("object.set_active_uv",text="Set Active",icon = 'ORPHAN_DATA').uv_slot = uv_settings.uv_slot
+
 
 class HelpPanel(bpy.types.Panel):
     bl_idname = "GLBTEXTOOLS_PT_help_panel"
@@ -210,7 +250,7 @@ class HelpPanel(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "GLB Texture Tools"
-    bl_order = 3
+    bl_order = 4
 
     def draw(self, context):
         scene = context.scene

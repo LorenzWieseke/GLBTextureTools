@@ -1,6 +1,6 @@
 import bpy
 from .constants import *
-from .functions import *
+from . import functions
 from .bake import Bake_On_Plane, Bake_AO
 from .create_new_material import create_bake_material
 
@@ -43,14 +43,14 @@ class GetMaterialByTextureOperator(bpy.types.Operator):
         for mat in materials:
             nodes = mat.node_tree.nodes
             tex_node_type = Node_Types.image_texture
-            tex_nodes = find_node_by_type(nodes,tex_node_type)
+            tex_nodes = functions.find_node_by_type(nodes,tex_node_type)
             
             # if texture node in current node tree
             if len(tex_nodes) > 0:
                 images = [node.image for node in tex_nodes]
                 if sel_image_texture in images:
                     materials_found.append(mat.name)
-                    select_obj_by_mat(self,mat)
+                    functions.select_obj_by_mat(self,mat)
                     
 
         return {"FINISHED"}
@@ -74,6 +74,10 @@ class CleanMaterialsOperator(bpy.types.Operator):
         for material in bpy.data.materials:
             if not material.users:
                 bpy.data.materials.remove(material)
+
+        # for obj in bpy.data.objects:
+        #     functions.select_object(self,obj)
+        #     bpy.ops.object.material_slot_remove_unused()
         return {'FINISHED'}
 
 class ScaleImageOperator(bpy.types.Operator):
@@ -107,7 +111,7 @@ class ScaleImageOperator(bpy.types.Operator):
 
         # get image size for baking
         imageSize = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
-        scale_image(sel_image_texture,imageSize)
+        functions.scale_image(sel_image_texture,imageSize)
 
         return {'FINISHED'}
 
@@ -157,7 +161,7 @@ class NodeToTextureOperator(bpy.types.Operator):
                 material.use_fake_user = True
 
                 # error checking
-                check_ok = check_only_one_pbr(self,material) and check_is_org_material(self,material)
+                check_ok = functions.check_only_one_pbr(self,material) and functions.check_is_org_material(self,material)
                 if not check_ok :
                     continue
                 
@@ -203,14 +207,17 @@ class SwitchBakeMaterialOperator(bpy.types.Operator):
     bl_label = "Baked Material"
 
     def execute(self, context):
-        mats = bpy.data.materials
+
+        active_obj = context.object
+        active_mat = context.object.active_material
+
+        all_mats = bpy.data.materials
+        mat_bake = all_mats.get(active_mat.name + "_Bake") 
 
         for obj in bpy.data.objects:
             for slot in obj.material_slots:
-                mat = slot.material
-                matBake = mats.get(mat.name + "_Bake")
-                if matBake is not None:
-                    slot.material = matBake
+                if mat_bake is not None and slot.material is active_mat:
+                    slot.material = mat_bake
 
         return {'FINISHED'}
 
@@ -222,38 +229,80 @@ class SwitchOrgMaterialOperator(bpy.types.Operator):
 
     def execute(self, context):
 
-        mats = bpy.data.materials
+        active_obj = context.object
+        active_mat = context.object.active_material
+
+        all_mats = bpy.data.materials
+        index = active_mat.name.find("_Bake")
+        mat_org = all_mats.get(active_mat.name[0:index]) 
 
         for obj in bpy.data.objects:
             for slot in obj.material_slots:
-                matBake = slot.material
-                if "_Bake" in matBake.name:
-                    index = matBake.name.find("_Bake")
-                    orgMatName = matBake.name[0:index]
-
-                    orgMat = mats.get(orgMatName)
-                    if orgMat is not None:
-                        slot.material = orgMat
+                mat = slot.material
+                if mat_org is not None and mat_org.name in mat.name:
+                    slot.material = mat_org
 
         return {'FINISHED'}
 
-# class ShowAOOperator(bpy.types.Operator):
-#     bl_idname = "scene.show_ao"
-#     bl_label = "Show AO"
-#     bl_description = "Switch all Materials to Show AO"
-#     bl_options = {"REGISTER"}
+class AddUVOperator(bpy.types.Operator):
+    """Add uv layer with layer name entered above"""
+    bl_idname = "object.add_uv"
+    bl_label = "Add UV"
 
-#     @classmethod
-#     def poll(cls, context):
-#         return True
+    uv_name:bpy.props.StringProperty()
 
-#     def execute(self, context):
-       
+    def execute(self, context):
+        sel_objects = context.selected_objects
 
-        
-#         return {"FINISHED"}
+        for obj in sel_objects:
+            if obj.type != "MESH":
+                continue
+            uv_layers = obj.data.uv_layers
+            uv_layers.new(name=self.uv_name)
 
+        return {'FINISHED'}
 
+class RemoveUVOperator(bpy.types.Operator):
+    """Delete all uv layers found in uv_slot entered above"""
+    bl_idname = "object.remove_uv"
+    bl_label = "Remove UV"
+
+    uv_slot:bpy.props.IntProperty()
+
+    def execute(self, context):
+        sel_objects = context.selected_objects
+        self.uv_slot -= 1
+
+        for obj in sel_objects:
+            if obj.type != "MESH":
+                continue
+            uv_layers = obj.data.uv_layers
+
+            if len(uv_layers) > self.uv_slot:
+                uv_layers.remove(uv_layers[self.uv_slot])
+
+        return {'FINISHED'}
+
+class SetActiveUVOperator(bpy.types.Operator):
+    """Set the acive uv to the slot entered above"""
+    bl_idname = "object.set_active_uv"
+    bl_label = "Set Active UV"
+
+    uv_slot:bpy.props.IntProperty()
+
+    def execute(self, context):
+        sel_objects = context.selected_objects
+        self.uv_slot -= 1
+
+        for obj in sel_objects:
+            if obj.type != "MESH":
+                continue
+            uv_layers = obj.data.uv_layers
+
+            if len(uv_layers) > self.uv_slot:
+                uv_layers.active_index = self.uv_slot
+
+        return {'FINISHED'}
 
 
  
