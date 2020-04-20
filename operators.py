@@ -154,25 +154,26 @@ class NodeToTextureOperator(bpy.types.Operator):
           # ----------------------- Texture --------------------#
 
         # for each material, set it to fake to save it und copy it with org. name + "_Bake"
-        for materials in material_slots:
-            material = materials.material
+        # for materials in material_slots:
+        #     material = materials.material
 
-            if context.scene.bake_settings.pbr_nodes:
-                material.use_fake_user = True
+        if context.scene.bake_settings.pbr_nodes:
+            material = context.active_object.active_material
+            material.use_fake_user = True
 
-                # error checking
-                check_ok = functions.check_only_one_pbr(self,material) and functions.check_is_org_material(self,material)
-                if not check_ok :
-                    continue
-                
-                Bake_On_Plane(material)
+            # error checking
+            check_ok = functions.check_only_one_pbr(self,material) and functions.check_is_org_material(self,material)
+            if not check_ok :
+                return
+            
+            Bake_On_Plane(material)
 
-                create_bake_material(material)
+            create_bake_material(material)
 
-                # select active object an change to baked material
-                bpy.context.view_layer.objects.active = active_object
-                active_object.select_set(True)
-                bpy.ops.object.switch_bake_mat_op()
+            # select active object an change to baked material
+            bpy.context.view_layer.objects.active = active_object
+            active_object.select_set(True)
+            bpy.ops.object.switch_bake_mat_op()
 
         return {'FINISHED'}
 
@@ -206,6 +207,13 @@ class SwitchBakeMaterialOperator(bpy.types.Operator):
     bl_idname = "object.switch_bake_mat_op"
     bl_label = "Baked Material"
 
+    @classmethod
+    def poll(cls, context):
+        if context.object is not None:
+            if context.object.material_slots == "MESH":
+                return True
+        return False
+
     def execute(self, context):
 
         active_obj = context.object
@@ -226,6 +234,13 @@ class SwitchOrgMaterialOperator(bpy.types.Operator):
     """Click to switch to original material"""
     bl_idname = "object.switch_org_mat_op"
     bl_label = "Org. Material"
+
+    @classmethod
+    def poll(cls, context):
+        if context.object is not None:
+            if context.object.type == "MESH":
+                return True
+        return False
 
     def execute(self, context):
 

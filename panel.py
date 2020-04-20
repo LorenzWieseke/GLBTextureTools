@@ -239,9 +239,9 @@ class UVPanel(bpy.types.Panel):
         row.prop(uv_settings,"uv_name", text="UV Name")
         row.prop(uv_settings,"uv_slot", text="UV Slot")
         row = box.row()  
-        row.operator("object.add_uv",text="Add UV",icon = 'ORPHAN_DATA').uv_name = uv_settings.uv_name
-        row.operator("object.remove_uv",text="Remove UV",icon = 'ORPHAN_DATA').uv_slot = uv_settings.uv_slot
-        row.operator("object.set_active_uv",text="Set Active",icon = 'ORPHAN_DATA').uv_slot = uv_settings.uv_slot
+        row.operator("object.add_uv",text="Add UV",icon = 'ADD').uv_name = uv_settings.uv_name
+        row.operator("object.remove_uv",text="Remove UV",icon = 'REMOVE').uv_slot = uv_settings.uv_slot
+        row.operator("object.set_active_uv",text="Set Active",icon = 'RESTRICT_SELECT_OFF').uv_slot = uv_settings.uv_slot
 
 
 class HelpPanel(bpy.types.Panel):

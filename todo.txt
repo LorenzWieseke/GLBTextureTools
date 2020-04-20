@@ -1,2 +1,5 @@
-add name for AO map
+
 group bake settings into ao and pbr settings
+
+add option to switch back to org. image size
+reorganize ui

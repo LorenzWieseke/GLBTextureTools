@@ -35,22 +35,21 @@ def save_image(image):
     filePath = bpy.data.filepath
     path = os.path.dirname(filePath)
 
-    try:
-        os.mkdir(path + "/tex")
-    except FileExistsError:
-        pass
+    if not os.path.exists(path + "/textures"):
+        os.mkdir(path + "/textures")
+    
+    if not os.path.exists(path + "/textures/GLBTexTool"):
+        os.mkdir(path + "/textures/GLBTexTool")
 
-    try:
-        os.mkdir(path + "/tex/" + str(image.size[0]))
-    except FileExistsError:
-        pass
+    if not os.path.exists(path + "/textures/GLBTexTool/" + str(image.size[0])):
+        os.mkdir(path + "/textures/GLBTexTool/" + str(image.size[0]))
 
     if image.file_format == "JPEG" :
         file_ending = ".jpg"
     elif image.file_format == "PNG" :
         file_ending = ".png"
     
-    savepath = path + "/tex/" + \
+    savepath = path + "/textures/GLBTexTool/" + \
         str(image.size[0]) + "/" + image.name + file_ending
 
     image.filepath_raw = savepath
