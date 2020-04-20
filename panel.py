@@ -16,6 +16,16 @@ bpy.types.Scene.img_bake_size = EnumProperty(
         ('1024', '1024', 'Set image size to 1024'),
         ('2048', '2048', 'Set image size to 2048'),
         ('4096', '4096', 'Set image size to 4096'),
+        ('0', 'Original', 'Set image back to original File'),
+    ])
+
+bpy.types.Scene.img_file_format = EnumProperty(
+    name='File Format',
+    description='Set file format for output image',
+    default='PNG',
+    items=[
+         ('JPEG', 'JPEG', 'Set image format to jpg'),
+        ('PNG', 'PNG', 'Set image format to jpg'),
     ])
 
 class UV_Settings(bpy.types.PropertyGroup):
@@ -81,6 +91,8 @@ class ResolutionPanel(bpy.types.Panel):
         box = layout.box()
         column = box.column()
         column.prop(scene, "img_bake_size")
+
+        column.prop(scene,"img_file_format")
  
 
 class NodeToTexturePanel(bpy.types.Panel):

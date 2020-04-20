@@ -43,14 +43,19 @@ def save_image(image):
 
     if not os.path.exists(path + "/textures/GLBTexTool/" + str(image.size[0])):
         os.mkdir(path + "/textures/GLBTexTool/" + str(image.size[0]))
-
-    if image.file_format == "JPEG" :
-        file_ending = ".jpg"
-    elif image.file_format == "PNG" :
-        file_ending = ".png"
     
+    # file format
+    image.file_format = bpy.context.scene.img_file_format
+    filename,file_extention = os.path.splitext(image.name)
+    file_extention = image.file_format.lower()
+    if file_extention == "jpeg":
+        file_extention = "jpg"
+
+    image.name = filename + "." + file_extention
+
+    # change path   
     savepath = path + "/textures/GLBTexTool/" + \
-        str(image.size[0]) + "/" + image.name + file_ending
+        str(image.size[0]) + "/" + image.name 
 
     image.filepath_raw = savepath
     
@@ -75,13 +80,18 @@ def get_file_size(filepath):
     return (size)
 
 
-def scale_image(image, newSize):
+def scale_image(image, new_size):
     if (image.org_filepath != ''):
         image.filepath = image.org_filepath
 
     image.org_filepath = image.filepath
-    image.scale(newSize[0], newSize[1])
-    save_image(image)
+    
+    # set image back to original if size is 0, else scale it
+    if new_size[0] == 0:
+        image.filepath_raw = image.org_filepath
+    else:
+        image.scale(new_size[0], new_size[1])
+        save_image(image)
 
 
 def check_only_one_pbr(self,material):

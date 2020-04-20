@@ -110,8 +110,8 @@ class ScaleImageOperator(bpy.types.Operator):
         sel_image_texture = images[context.scene.texture_index]
 
         # get image size for baking
-        imageSize = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
-        functions.scale_image(sel_image_texture,imageSize)
+        image_size = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
+        functions.scale_image(sel_image_texture,image_size)
 
         return {'FINISHED'}
 
@@ -209,10 +209,8 @@ class SwitchBakeMaterialOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if context.object is not None:
-            if context.object.material_slots == "MESH":
-                return True
-        return False
+        return (context.object is not None and context.object.type == 'MESH' and
+        context.object.active_material is not None and "_Bake" not in context.object.active_material.name)
 
     def execute(self, context):
 
@@ -237,10 +235,8 @@ class SwitchOrgMaterialOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if context.object is not None:
-            if context.object.type == "MESH":
-                return True
-        return False
+        return (context.object is not None and context.object.type == 'MESH' and
+        context.object.active_material is not None and "_Bake" in context.object.active_material.name)
 
     def execute(self, context):
 
