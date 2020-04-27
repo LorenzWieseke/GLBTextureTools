@@ -21,14 +21,14 @@ def comp_ai_denoise(bake_image,nrm_image,color_image):
     image_node.location = 0,0
 
     # nrm image
-    image_node = tree.nodes.new(type='CompositorNodeImage')
-    image_node.image = nrm_image
-    image_node.location = 0,300
+    nrm_image_node = tree.nodes.new(type='CompositorNodeImage')
+    nrm_image_node.image = nrm_image
+    nrm_image_node.location = 0,300
 
     # color image
-    image_node = tree.nodes.new(type='CompositorNodeImage')
-    image_node.image = color_image
-    image_node.location = 0,600
+    color_image_node = tree.nodes.new(type='CompositorNodeImage')
+    color_image_node.image = color_image
+    color_image_node.location = 0,600
 
     # create denoise node
     denoise_node = tree.nodes.new(type='CompositorNodeDenoise')
@@ -42,6 +42,8 @@ def comp_ai_denoise(bake_image,nrm_image,color_image):
     # link nodes
     links = tree.links
     links.new(image_node.outputs[0], denoise_node.inputs[0])
+    links.new(nrm_image_node.outputs[0], denoise_node.inputs[1])
+    links.new(color_image_node.outputs[0], denoise_node.inputs[2])
     links.new(denoise_node.outputs[0], comp_node.inputs[0])
 
     # set output resolution to image res

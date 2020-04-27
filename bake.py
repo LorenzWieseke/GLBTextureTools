@@ -138,9 +138,10 @@ def Bake_Texture(selected_objects,bake_settings):
         color_image.filepath = os.path.dirname(org_filepath) + "\\" + org_name + "_COLOR" + file_format
         color_image.source = "FILE"
 
+
         denoised_image_path = comp_ai_denoise(bake_image,nrm_image,color_image)
 
-        # bake_image.filepath = denoised_image_path
+        bake_image.filepath = denoised_image_path
 
         # clear images
         # D.images.remove(nrm_image)
@@ -152,6 +153,10 @@ def Bake_Texture(selected_objects,bake_settings):
 
     # ----------------------- CLEANUP --------------------#
     C.scene.render.engine = 'BLENDER_EEVEE'
+    # cleanup images
+    for img in D.images:
+        if image_name in img.name and "_" in img.name:
+            D.images.remove(img)
 
     # cleanup nodes
     for material in all_materials:
