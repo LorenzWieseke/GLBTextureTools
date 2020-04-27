@@ -40,8 +40,10 @@ class Bake_Settings(bpy.types.PropertyGroup):
     pbr_nodes: BoolProperty(default = True)
     pbr_samples: IntProperty(name = "Samples for PBR bake", default = 1)
     ao_map: BoolProperty(default = False)
-    ao_map_name: StringProperty(default="AO")
     ao_samples: IntProperty(name = "Samples for AO bake", default = 2)
+    ao_map_name: StringProperty(default="AO")
+    lightmap: BoolProperty(default = False)
+    lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
     ao_use_clear: BoolProperty(default= True)
 
 bpy.utils.register_class(Bake_Settings)
@@ -123,12 +125,18 @@ class NodeToTexturePanel(bpy.types.Panel):
             row.prop(scene.bake_settings, 'ao_map',  text="AO",toggle = True)
             row.prop(scene.bake_settings, 'ao_samples',  text="Samples")
 
+            row = col.row(align = True)     
+            row.prop(scene.bake_settings, 'lightmap',  text="Lightmap",toggle = True)
+            row.prop(scene.bake_settings, 'lightmap_samples',  text="Samples")
+
             box.prop(scene.bake_settings, 'ao_map_name',  text="Image Name",toggle = True)
             box.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
             box.prop(scene.bake_settings, 'ao_use_clear', text="Clear Bake Image")
             
         layout.operator("object.node_to_texture_operator",text="Bake Textures")
+        layout.operator("scene.open_folder",icon='FILEBROWSER')
 
+        layout.label(text="VIEW")
         col = layout.column(align=True)
         row = col.row(align=True)
         row.operator("object.switch_org_mat_op",icon = 'NODE_MATERIAL')
@@ -228,9 +236,24 @@ class TextureSelectionPanel(bpy.types.Panel):
 
         # Scale and Clean
         layout.operator("image.scale_image",text="Scale Image",icon= 'FULLSCREEN_EXIT')
+  
+class CleanupPanel(bpy.types.Panel):
+    bl_idname = "GLBTEXTOOLS_PT_cleanup_panel"
+    bl_label = "Cleanup"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = 'GLB Texture Tools'
+    bl_order = 3
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        data = bpy.data
+        
         row = layout.row()
         row.operator("image.clean_textures",text="Clean Textures",icon = 'ORPHAN_DATA')
         row.operator("material.clean_materials",text="Clean Materials",icon = 'ORPHAN_DATA')
+
 
 class UVPanel(bpy.types.Panel):
     bl_idname = "GLBTEXTOOLS_PT_UV_panel"
@@ -238,7 +261,8 @@ class UVPanel(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "GLB Texture Tools"
-    bl_order = 3
+    bl_options = {'DEFAULT_CLOSED'}
+    bl_order = 4
 
     def draw(self, context):
         scene = context.scene
@@ -262,7 +286,7 @@ class HelpPanel(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "GLB Texture Tools"
-    bl_order = 4
+    bl_order = 5
 
     def draw(self, context):
         scene = context.scene

@@ -4,8 +4,7 @@ from .constants import *
 import mathutils
 import os
 
-
-def Bake_AO(selected_objects):
+def Bake_Texture(selected_objects,bake_settings):
     # -----------------------SETUP VARS--------------------#
     C = bpy.context
     D = bpy.data
@@ -40,21 +39,19 @@ def Bake_AO(selected_objects):
                 device = 'CPU'
                 print("GPU not Supported, leaving at CPU")
     
+    # -----------------------SETUP IMAGE--------------------#
+    image_size = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
+    image_name = C.scene.bake_settings.ao_map_name
+        
+
+    bake_image = create_image(image_name,image_size)
+
     
     # -----------------------SETUP NODES--------------------#
     for material in all_materials:
 
         nodes = material.node_tree.nodes
-        image_size = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
-        image_name = C.scene.bake_settings.ao_map_name
-
-        # find image
-        bake_image = D.images.get(image_name)
-
-        if bake_image is None:
-            bake_image = D.images.new(image_name, width=image_size[0], height=image_size[1])
-            bake_image.name = image_name
-
+        
         # add image texture
         image_texture_node = add_node(material,Shader_Node_Types.image_texture,"AO Bake")
         image_texture_node.image = bake_image
@@ -87,7 +84,8 @@ def Bake_AO(selected_objects):
 
         # ----------------------- SETUP AO NODE --------------------#
         ao_node = add_node(material,Shader_Node_Types.ao,"AO")
-        emission_setup(material,ao_node.outputs[1])
+        if (bake_settings.ao_map):
+            emission_setup(material,ao_node.outputs[1])
 
 
         # ----------------------- POSITION NODES --------------------#
@@ -109,7 +107,48 @@ def Bake_AO(selected_objects):
 
     # ----------------------- BAKING --------------------#
     # bake once for all selcted objects
-    O.object.bake(type="EMIT", use_clear=C.scene.bake_settings.ao_use_clear,margin=2)
+    if (bake_settings.ao_map):
+        O.object.bake(type="EMIT", use_clear=C.scene.bake_settings.ao_use_clear,margin=2)
+    elif (bake_settings.lightmap):
+        O.object.bake(type="DIFFUSE", pass_filter= {'COLOR', 'DIRECT', 'INDIRECT','AO'}, use_clear=C.scene.bake_settings.ao_use_clear,margin=2)
+        save_image(bake_image)
+        org_name = bake_image.name
+        org_filepath = bake_image.filepath
+
+        bake_image.name = org_name + "_NRM"   
+        O.object.bake(type="NORMAL", use_clear=C.scene.bake_settings.ao_use_clear,margin=2) 
+        save_image(bake_image)    
+
+        bake_image.name = org_name + "_COLOR"   
+        O.object.bake(type="DIFFUSE", pass_filter= {'COLOR'}, use_clear=C.scene.bake_settings.ao_use_clear,margin=2)    
+        save_image(bake_image)
+
+        bake_image.name = org_name
+        bake_image.filepath = org_filepath
+
+        nrm_image_name = org_name + "_NRM"
+        nrm_image = create_image(nrm_image_name,bake_image.size)
+
+        file_format = os.path.splitext(bake_image.filepath)[1]
+        nrm_image.filepath = os.path.dirname(org_filepath) + "\\" + org_name + "_NRM" + file_format
+        nrm_image.source = "FILE"
+
+        color_image_name = org_name + "_COLOR"
+        color_image = create_image(color_image_name,bake_image.size)
+        color_image.filepath = os.path.dirname(org_filepath) + "\\" + org_name + "_COLOR" + file_format
+        color_image.source = "FILE"
+
+        denoised_image_path = comp_ai_denoise(bake_image,nrm_image,color_image)
+
+        # bake_image.filepath = denoised_image_path
+
+        # clear images
+        # D.images.remove(nrm_image)
+        # D.images.remove(color_image)
+
+
+
+
 
     # ----------------------- CLEANUP --------------------#
     C.scene.render.engine = 'BLENDER_EEVEE'

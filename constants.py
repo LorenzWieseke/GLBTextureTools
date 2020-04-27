@@ -12,3 +12,4 @@ class Shader_Node_Types:
     normal = "ShaderNodeNormalMap"
     ao = "ShaderNodeAmbientOcclusion"
     uv = "ShaderNodeUVMap"
+    comp_image_node = 'CompositorNodeImage'

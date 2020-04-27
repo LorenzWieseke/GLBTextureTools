@@ -3,6 +3,58 @@ import bpy
 import os
 from .constants import *
 
+# COMPOSITING
+def comp_ai_denoise(bake_image,nrm_image,color_image):
+
+
+    # switch on nodes and get reference
+    bpy.context.scene.use_nodes = True
+    tree = bpy.context.scene.node_tree
+
+    # clear default nodes
+    for node in tree.nodes:
+        tree.nodes.remove(node)
+
+    # bake image
+    image_node = tree.nodes.new(type='CompositorNodeImage')
+    image_node.image = bake_image
+    image_node.location = 0,0
+
+    # nrm image
+    image_node = tree.nodes.new(type='CompositorNodeImage')
+    image_node.image = nrm_image
+    image_node.location = 0,300
+
+    # color image
+    image_node = tree.nodes.new(type='CompositorNodeImage')
+    image_node.image = color_image
+    image_node.location = 0,600
+
+    # create denoise node
+    denoise_node = tree.nodes.new(type='CompositorNodeDenoise')
+    denoise_node.location = 300,0
+
+    # create output node
+     
+    comp_node = tree.nodes.new('CompositorNodeComposite')
+    comp_node.location = 600,0
+
+    # link nodes
+    links = tree.links
+    links.new(image_node.outputs[0], denoise_node.inputs[0])
+    links.new(denoise_node.outputs[0], comp_node.inputs[0])
+
+    # set output resolution to image res
+    bpy.context.scene.render.resolution_x = bake_image.size[0]
+    bpy.context.scene.render.resolution_y = bake_image.size[1]
+
+    bpy.data.scenes["Scene"].render.filepath = "\\textures\\GLBTexTool\\denoise"
+    bpy.ops.render.render(write_still=True)
+    denoised_image_path = bpy.data.scenes["Scene"].render.filepath + "." + bpy.data.scenes["Scene"].render.image_settings.file_format.lower()
+    return denoised_image_path
+
+
+
 def select_object(self,obj):
     C = bpy.context
     try:
@@ -11,7 +63,6 @@ def select_object(self,obj):
         obj.select_set(True)
     except:
         self.report({'INFO'},"Object not in View Layer")
-
 
 def select_obj_by_mat(self,mat):
     D = bpy.data
@@ -50,22 +101,31 @@ def save_image(image):
     file_extention = image.file_format.lower()
     if file_extention == "jpeg":
         file_extention = "jpg"
+    if file_extention == "targa":
+        file_extention = "tga"
 
-    image.name = filename + "." + file_extention
+    # image.name = filename + "." + file_extention
 
     # change path   
-    savepath = path + "/textures/GLBTexTool/" + \
-        str(image.size[0]) + "/" + image.name 
+    savepath = path + "\\textures\\GLBTexTool\\" + str(image.size[0]) + "\\" + image.name 
 
-    image.filepath_raw = savepath
+    image.filepath_raw = savepath + "." + file_extention
     
-    # if "Normal" in image.name:
-    #     bpy.context.scene.render.image_settings.quality = 90
-    #     image.save_render( filepath = image.filepath_raw, scene = bpy.context.scene )
+    # if "Viewer Node" in image.name:
+    #     image.save_render(filepath=savepath)
     # else:
     image.save()
 
-  
+def create_image(image_name,image_size):
+    D = bpy.data
+    # find image
+    image = D.images.get(image_name)
+
+    if image is None:
+        image = D.images.new(image_name, width=image_size[0], height=image_size[1])
+        image.name = image_name
+
+    return image
 
 
 def get_file_size(filepath):
@@ -75,7 +135,8 @@ def get_file_size(filepath):
         size = os.path.getsize(path)
         size /= 1024
     except:
-        print("error getting file path for " + filepath)
+        return ("Unpack")
+        # print("error getting file path for " + filepath)
         
     return (size)
 

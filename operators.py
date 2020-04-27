@@ -1,8 +1,11 @@
+import os
+import subprocess
 import bpy
 from .constants import *
 from . import functions
-from .bake import Bake_On_Plane, Bake_AO
+from .bake import Bake_On_Plane, Bake_Texture
 from .create_new_material import create_bake_material
+
 
 class GetMaterialByTextureOperator(bpy.types.Operator):
     bl_idname = "scene.select_mat_by_tex"
@@ -130,9 +133,8 @@ class NodeToTextureOperator(bpy.types.Operator):
 
         active_object = context.object
         selected_objects = context.selected_objects
-        material_slots = active_object.material_slots
 
-          # ----------------------- CHECK SELECTION  --------------------#
+        # ----------------------- CHECK SELECTION  --------------------#
 
         if active_object.type != 'MESH':
             self.report({'INFO'}, 'No Mesh selected')
@@ -144,14 +146,22 @@ class NodeToTextureOperator(bpy.types.Operator):
 
         # get selcted objects once more without all that curve and emtpy crap
         selected_objects = context.selected_objects
+        bake_settings = context.scene.bake_settings
+        # ----------------------- SET VISIBLITY TO MATERIAL  --------------------#
+        context.scene.toggle_ao = False
 
-          # ----------------------- AO  --------------------#
+        # ----------------------- AO  --------------------#
+        if bake_settings.ao_map:
+            Bake_Texture(selected_objects,bake_settings)
+    
+        # ----------------------- LIGHTMAP  --------------------#
+        if bake_settings.lightmap:
+            Bake_Texture(selected_objects,bake_settings)
+            
+            # # render to get composite image
+            # bpy.ops.render.render(use_viewport=True)
 
-        if context.scene.bake_settings.ao_map:
-            Bake_AO(selected_objects)
-            context.scene.toggle_ao = False
-
-          # ----------------------- Texture --------------------#
+        # ----------------------- PBR Texture --------------------#
 
         # for each material, set it to fake to save it und copy it with org. name + "_Bake"
         # for materials in material_slots:
@@ -174,6 +184,9 @@ class NodeToTextureOperator(bpy.types.Operator):
             bpy.context.view_layer.objects.active = active_object
             active_object.select_set(True)
             bpy.ops.object.switch_bake_mat_op()
+
+
+            
 
         return {'FINISHED'}
 
@@ -220,10 +233,14 @@ class SwitchBakeMaterialOperator(bpy.types.Operator):
         all_mats = bpy.data.materials
         mat_bake = all_mats.get(active_mat.name + "_Bake") 
 
-        for obj in bpy.data.objects:
-            for slot in obj.material_slots:
-                if mat_bake is not None and slot.material is active_mat:
-                    slot.material = mat_bake
+        
+        # for obj in bpy.data.objects:
+        for slot in active_obj.material_slots:
+            if mat_bake is not None and slot.material is active_mat:
+                slot.material = mat_bake
+            else:
+                self.report({'INFO'}, 'Bake textures first')
+
 
         return {'FINISHED'}
 
@@ -247,11 +264,11 @@ class SwitchOrgMaterialOperator(bpy.types.Operator):
         index = active_mat.name.find("_Bake")
         mat_org = all_mats.get(active_mat.name[0:index]) 
 
-        for obj in bpy.data.objects:
-            for slot in obj.material_slots:
-                mat = slot.material
-                if mat_org is not None and mat_org.name in mat.name:
-                    slot.material = mat_org
+        # for obj in bpy.data.objects:
+        for slot in active_obj.material_slots:
+            mat = slot.material
+            if mat_org is not None and mat_org.name in mat.name:
+                slot.material = mat_org
 
         return {'FINISHED'}
 
@@ -314,6 +331,33 @@ class SetActiveUVOperator(bpy.types.Operator):
                 uv_layers.active_index = self.uv_slot
 
         return {'FINISHED'}
+
+
+class GOVIE_Open_Folder_Operator(bpy.types.Operator):
+    bl_idname = "scene.open_folder"
+    bl_label = "Open Folder"
+    bl_description = "Open Texture folder if it exists, bake or scale texture to create texture folder"
+
+    texture_path="\\textures\\"
+    
+    @classmethod
+    def poll(self, context):
+        filePath = bpy.data.filepath
+        path = os.path.dirname(filePath)
+        if os.path.exists(path + self.texture_path):
+            return True
+        return False
+
+    def execute(self, context):
+        filepath = bpy.data.filepath
+        directory = os.path.dirname(filepath) + self.texture_path
+        
+        if filepath is not "":
+            subprocess.call("explorer " + directory, shell=True)
+        else:
+            self.report({'INFO'}, 'You need to save Blend file first !')
+
+        return {"FINISHED"}
 
 
  
