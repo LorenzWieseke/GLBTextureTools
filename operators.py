@@ -24,7 +24,7 @@ class GetMaterialByTextureOperator(bpy.types.Operator):
 
         # image to index not found
         try:
-            sel_image_texture = images[context.scene.texture_index]
+            sel_image_texture = images[context.scene.texture_panel_settings.texture_index]
             if sel_image_texture.name in ('Viewer Node', 'Render Result'):
                 display = False
         except:
@@ -36,7 +36,7 @@ class GetMaterialByTextureOperator(bpy.types.Operator):
         D = bpy.data
         
         images = D.images
-        sel_image_texture = images[context.scene.texture_index]
+        sel_image_texture = images[context.scene.texture_panel_settings.texture_index]
         materials = D.materials
 
         # to print materials with current image texture
@@ -58,6 +58,16 @@ class GetMaterialByTextureOperator(bpy.types.Operator):
 
         return {"FINISHED"}
 
+
+class CleanBakesOperator(bpy.types.Operator):
+    bl_idname = "image.clean_bakes"
+    bl_label = "CleanTextures"
+
+    def execute(self, context):
+        for image in bpy.data.images:
+            if not image.users or list(image.size) == [0,0]:
+                bpy.data.images.remove(image)
+        return {'FINISHED'}
 
 class CleanTexturesOperator(bpy.types.Operator):
     bl_idname = "image.clean_textures"
@@ -97,7 +107,7 @@ class ScaleImageOperator(bpy.types.Operator):
 
         # image to index not found 
         try:
-            sel_image_texture = images[context.scene.texture_index]
+            sel_image_texture = images[context.scene.texture_panel_settings.texture_index]
             if sel_image_texture.name in ('Viewer Node','Render Result'):
                 display = False
         except:
@@ -110,7 +120,7 @@ class ScaleImageOperator(bpy.types.Operator):
         D = bpy.data
 
         images = D.images
-        sel_image_texture = images[context.scene.texture_index]
+        sel_image_texture = images[context.scene.texture_panel_settings.texture_index]
 
         # get image size for baking
         image_size = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
@@ -131,8 +141,14 @@ class NodeToTextureOperator(bpy.types.Operator):
 
     def execute(self, context):
 
+        # ----------------------- VAR  --------------------#
         active_object = context.object
         selected_objects = context.selected_objects
+
+        # get selcted objects once more without all that curve and emtpy crap
+        selected_objects = context.selected_objects
+        bake_settings = context.scene.bake_settings
+        texture_panel_settings = context.scene.texture_panel_settings
 
         # ----------------------- CHECK SELECTION  --------------------#
 
@@ -144,11 +160,8 @@ class NodeToTextureOperator(bpy.types.Operator):
             if obj.type != 'MESH':
                 obj.select_set(False)
 
-        # get selcted objects once more without all that curve and emtpy crap
-        selected_objects = context.selected_objects
-        bake_settings = context.scene.bake_settings
         # ----------------------- SET VISIBLITY TO MATERIAL  --------------------#
-        context.scene.toggle_ao = False
+        texture_panel_settings.toggle_bake_texture = False
 
         # ----------------------- AO  --------------------#
         if bake_settings.ao_map:
@@ -158,8 +171,6 @@ class NodeToTextureOperator(bpy.types.Operator):
         if bake_settings.lightmap:
             Bake_Texture(selected_objects,bake_settings)
             
-            # # render to get composite image
-            # bpy.ops.render.render(use_viewport=True)
 
         # ----------------------- PBR Texture --------------------#
 
@@ -167,7 +178,7 @@ class NodeToTextureOperator(bpy.types.Operator):
         # for materials in material_slots:
         #     material = materials.material
 
-        if context.scene.bake_settings.pbr_nodes:
+        if bake_settings.pbr_nodes:
             material = context.active_object.active_material
             material.use_fake_user = True
 
@@ -176,7 +187,7 @@ class NodeToTextureOperator(bpy.types.Operator):
             if not check_ok :
                 return
             
-            Bake_On_Plane(material)
+            Bake_On_Plane(material,bake_settings)
 
             create_bake_material(material)
 
@@ -184,9 +195,6 @@ class NodeToTextureOperator(bpy.types.Operator):
             bpy.context.view_layer.objects.active = active_object
             active_object.select_set(True)
             bpy.ops.object.switch_bake_mat_op()
-
-
-            
 
         return {'FINISHED'}
 
@@ -275,7 +283,7 @@ class SwitchOrgMaterialOperator(bpy.types.Operator):
 class AddUVOperator(bpy.types.Operator):
     """Add uv layer with layer name entered above"""
     bl_idname = "object.add_uv"
-    bl_label = "Add UV"
+    bl_label = "Add UV to all selected objects"
 
     uv_name:bpy.props.StringProperty()
 
@@ -286,7 +294,11 @@ class AddUVOperator(bpy.types.Operator):
             if obj.type != "MESH":
                 continue
             uv_layers = obj.data.uv_layers
+            if self.uv_name in uv_layers:
+                print("UV Name already take, choose another one")
+                continue
             uv_layers.new(name=self.uv_name)
+            uv_layers.get(self.uv_name).active = True
 
         return {'FINISHED'}
 

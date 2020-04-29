@@ -33,6 +33,16 @@ class UV_Settings(bpy.types.PropertyGroup):
     uv_name: StringProperty(default="AO")
 
 bpy.utils.register_class(UV_Settings)
+bpy.types.Scene.uv_settings = PointerProperty(type=UV_Settings)
+
+class Cleanup_Settings(bpy.types.PropertyGroup):
+    clean_texture: BoolProperty(default=True)
+    clean_material: BoolProperty(default=True)
+    clean_bake: BoolProperty(default=False)
+    clean_node_tree: BoolProperty(default=False)
+
+bpy.utils.register_class(Cleanup_Settings)
+bpy.types.Scene.cleanup_settings = PointerProperty(type=Cleanup_Settings)
 
 class Bake_Settings(bpy.types.PropertyGroup):  
     open_bake_settings_menu: BoolProperty(default = False)    
@@ -41,29 +51,28 @@ class Bake_Settings(bpy.types.PropertyGroup):
     pbr_samples: IntProperty(name = "Samples for PBR bake", default = 1)
     ao_map: BoolProperty(default = False)
     ao_samples: IntProperty(name = "Samples for AO bake", default = 2)
-    ao_map_name: StringProperty(default="AO")
+    bake_image_name: StringProperty(default="Lightmap")
+    bake_image_clear: BoolProperty(default= True)
     lightmap: BoolProperty(default = False)
     lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
-    ao_use_clear: BoolProperty(default= True)
+    unwrap: BoolProperty(default= True)
 
 bpy.utils.register_class(Bake_Settings)
+bpy.types.Scene.bake_settings = PointerProperty(type=Bake_Settings)
 
+class Texture_Panel_Settings(bpy.types.PropertyGroup):
+    open_sel_mat_menu:BoolProperty(default=False)
+    toggle_bake_texture:BoolProperty(default=False,update=functions.apply_ao_toggle)
+    texture_index:IntProperty(name = "Index for Texture List", default = 0, update=functions.set_image_in_image_editor)
+
+bpy.utils.register_class(Texture_Panel_Settings)
+bpy.types.Scene.texture_panel_settings = PointerProperty(type=Texture_Panel_Settings)
+
+# HELP PANEL PROPERTIES
 def run_help_operator(self,context):
     bpy.ops.scene.help('INVOKE_DEFAULT')
 
-
-# HELP PANEL PROPERTIES
 bpy.types.Scene.help_tex_tools = BoolProperty(default=False,update=run_help_operator)
-
-# TEXTURE PANEL PROPERTIES
-bpy.types.Scene.open_sel_mat_menu = BoolProperty(default=False)
-bpy.types.Scene.need_unpack = BoolProperty(default=False)
-bpy.types.Scene.toggle_ao = BoolProperty(default=False,update=functions.apply_ao_toggle)
-bpy.types.Scene.bake_settings = PointerProperty(type=Bake_Settings)
-bpy.types.Scene.texture_index = IntProperty(name = "Index for Texture List", default = 0, update=functions.set_image_in_image_editor)
-
-# UV PROPERTIES
-bpy.types.Scene.uv_settings = PointerProperty(type=UV_Settings)
 
 # IMAGE PROPERTIES
 bpy.types.Image.org_filepath = StringProperty()
@@ -120,7 +129,8 @@ class NodeToTexturePanel(bpy.types.Panel):
             col = box.column(align = True)
             row = col.row(align = True)                       
             row.prop(scene.bake_settings, 'pbr_nodes', text="PBR",toggle = True)
-            row.prop(scene.bake_settings, 'pbr_samples', text="Samples",toggle = True)                
+            row.prop(scene.bake_settings, 'pbr_samples', text="Samples",toggle = True)    
+                      
             row = col.row(align = True)     
             row.prop(scene.bake_settings, 'ao_map',  text="AO",toggle = True)
             row.prop(scene.bake_settings, 'ao_samples',  text="Samples")
@@ -129,9 +139,10 @@ class NodeToTexturePanel(bpy.types.Panel):
             row.prop(scene.bake_settings, 'lightmap',  text="Lightmap",toggle = True)
             row.prop(scene.bake_settings, 'lightmap_samples',  text="Samples")
 
-            box.prop(scene.bake_settings, 'ao_map_name',  text="Image Name",toggle = True)
+            box.prop(scene.bake_settings, 'bake_image_name',  text="Image Name")
             box.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
-            box.prop(scene.bake_settings, 'ao_use_clear', text="Clear Bake Image")
+            box.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
+            box.prop(scene.bake_settings, 'unwrap', text="Unwrap")
             
         layout.operator("object.node_to_texture_operator",text="Bake Textures")
         layout.operator("scene.open_folder",icon='FILEBROWSER')
@@ -142,7 +153,7 @@ class NodeToTexturePanel(bpy.types.Panel):
         row.operator("object.switch_org_mat_op",icon = 'NODE_MATERIAL')
         row.operator("object.switch_bake_mat_op",icon = 'MATERIAL' )
         row = col.row(align=True)
-        row.prop(scene,"toggle_ao", text="Show Material" if scene.toggle_ao else "Show AO", icon="SHADING_RENDERED" if scene.toggle_ao else "NODE_MATERIAL")
+        row.prop(scene.texture_panel_settings,"toggle_bake_texture", text="Show Material" if scene.texture_panel_settings.toggle_bake_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_panel_settings.toggle_bake_texture else "NODE_MATERIAL")
 
 
 class TEX_UL_List(bpy.types.UIList):
@@ -214,14 +225,14 @@ class TextureSelectionPanel(bpy.types.Panel):
         data = bpy.data
 
         headline(layout,(0.6,"IMAGE NAME"),(0.5,"SIZE"),(1,"KB"))
-        layout.template_list("TEX_UL_List", "", data, "images", scene, "texture_index")
+        layout.template_list("TEX_UL_List", "", data, "images", scene.texture_panel_settings, "texture_index")
         
         layout.operator("file.unpack_all",text="Unpack")
 
         # Select Material by Texture
         row = layout.row()
-        row.prop(scene,"open_sel_mat_menu",text="Select Material by Texture", icon = 'TRIA_DOWN' if scene.open_sel_mat_menu else 'TRIA_RIGHT' )
-        if scene.open_sel_mat_menu:
+        row.prop(scene.texture_panel_settings,"open_sel_mat_menu",text="Select Material by Texture", icon = 'TRIA_DOWN' if scene.texture_panel_settings.open_sel_mat_menu else 'TRIA_RIGHT' )
+        if scene.texture_panel_settings.open_sel_mat_menu:
             box = layout.box()
             col = box.column(align = True)
             col.operator("scene.select_mat_by_tex",text="Select Material",icon='RESTRICT_SELECT_OFF')

@@ -50,7 +50,10 @@ def comp_ai_denoise(bake_image,nrm_image,color_image):
     bpy.context.scene.render.resolution_x = bake_image.size[0]
     bpy.context.scene.render.resolution_y = bake_image.size[1]
 
-    bpy.data.scenes["Scene"].render.filepath = "\\textures\\GLBTexTool\\denoise"
+    filePath = bpy.data.filepath
+    path = os.path.dirname(filePath)
+
+    bpy.data.scenes["Scene"].render.filepath = path + "\\textures\\GLBTexTool\\" + bake_image.name + "_Denoise"
     bpy.ops.render.render(write_still=True)
     denoised_image_path = bpy.data.scenes["Scene"].render.filepath + "." + bpy.data.scenes["Scene"].render.image_settings.file_format.lower()
     return denoised_image_path
@@ -77,7 +80,7 @@ def select_obj_by_mat(self,mat):
 
 def set_image_in_image_editor(self,context): 
     scene = self
-    sel_texture = bpy.data.images[scene.texture_index]
+    sel_texture = bpy.data.images[scene.texture_panel_settings.texture_index]
 
     for area in context.screen.areas :
         if area.type == 'IMAGE_EDITOR' :
@@ -259,12 +262,12 @@ def remove_gamma_node(material, pbrInput):
 
 def apply_ao_toggle(self,context): 
     all_materials = bpy.data.materials
-    ao_toggle = context.scene.toggle_ao
+    toggle_bake_texture = context.scene.texture_panel_settings.toggle_bake_texture
     for mat in all_materials:
         nodes = mat.node_tree.nodes
         ao_node = nodes.get("AO Bake")
         if ao_node is not None:
-            if ao_toggle:
+            if toggle_bake_texture:
                 emission_setup(mat,ao_node.outputs["Color"])
             else:
                 pbr_node = find_node_by_type(nodes,Node_Types.pbr_node)[0]   

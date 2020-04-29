@@ -10,6 +10,8 @@ def Bake_Texture(selected_objects,bake_settings):
     D = bpy.data
     O = bpy.ops
 
+    uv_name = "Lightmap"
+
     all_materials = set ()
     slots_array = [obj.material_slots for obj in selected_objects]
     for slots in slots_array:
@@ -17,20 +19,21 @@ def Bake_Texture(selected_objects,bake_settings):
             all_materials.add(slot.material)
 
     # -----------------------SETUP UV'S--------------------#
-    for obj in selected_objects:
-        bpy.context.view_layer.objects.active = obj
-        uv_layers = obj.data.uv_layers
-        if len(uv_layers) == 1:
-            bpy.ops.mesh.uv_texture_add()
-            uv_layers[1].name = "AO"
-            
-        uv_layers.get("AO").active = True
-
+    if bake_settings.unwrap:
+        O.object.add_uv(uv_name=uv_name)
+        O.object.transform_apply(location=False, rotation=False, scale=True)
+        O.object.mode_set(mode = 'EDIT')
+        O.mesh.select_all(action = 'SELECT')
+        O.uv.smart_project(island_margin=0.08)
+        O.object.mode_set(mode = 'OBJECT')
 
     # -----------------------SETUP ENGINE--------------------#
     if C.scene.render.engine == 'BLENDER_EEVEE':
         C.scene.render.engine = 'CYCLES'
-        C.scene.cycles.samples = bpy.context.scene.bake_settings.ao_samples
+        if bake_settings.ao_map:
+            C.scene.cycles.samples = bake_settings.ao_samples
+        if bake_settings.lightmap:
+            C.scene.cycles.samples = bake_settings.lightmap_samples
         device = C.scene.cycles.device
         if device != 'GPU':
             try:
@@ -41,9 +44,8 @@ def Bake_Texture(selected_objects,bake_settings):
     
     # -----------------------SETUP IMAGE--------------------#
     image_size = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
-    image_name = C.scene.bake_settings.ao_map_name
+    image_name = bake_settings.bake_image_name
         
-
     bake_image = create_image(image_name,image_size)
 
     
@@ -75,8 +77,8 @@ def Bake_Texture(selected_objects,bake_settings):
             ao_group.inputs.new('NodeSocketFloat','Occlusion')
             
         # create uv node
-        uv_node = add_node(material,Shader_Node_Types.uv,"AO_UV")     
-        uv_node.uv_map = "AO"
+        uv_node = add_node(material,Shader_Node_Types.uv,"Second_UV")     
+        uv_node.uv_map = uv_name
 
 
         make_link(material,uv_node.outputs["UV"],image_texture_node.inputs['Vector'])
@@ -84,7 +86,7 @@ def Bake_Texture(selected_objects,bake_settings):
 
         # ----------------------- SETUP AO NODE --------------------#
         ao_node = add_node(material,Shader_Node_Types.ao,"AO")
-        if (bake_settings.ao_map):
+        if bake_settings.ao_map:
             emission_setup(material,ao_node.outputs[1])
 
 
@@ -108,19 +110,19 @@ def Bake_Texture(selected_objects,bake_settings):
     # ----------------------- BAKING --------------------#
     # bake once for all selcted objects
     if (bake_settings.ao_map):
-        O.object.bake(type="EMIT", use_clear=C.scene.bake_settings.ao_use_clear,margin=2)
+        O.object.bake(type="EMIT", use_clear=bake_settings.bake_image_clear,margin=2)
     elif (bake_settings.lightmap):
-        O.object.bake(type="DIFFUSE", pass_filter= {'COLOR', 'DIRECT', 'INDIRECT','AO'}, use_clear=C.scene.bake_settings.ao_use_clear,margin=2)
+        O.object.bake(type="DIFFUSE", pass_filter= {'COLOR', 'DIRECT', 'INDIRECT','AO'}, use_clear=bake_settings.bake_image_clear,margin=2)
         save_image(bake_image)
         org_name = bake_image.name
         org_filepath = bake_image.filepath
 
         bake_image.name = org_name + "_NRM"   
-        O.object.bake(type="NORMAL", use_clear=C.scene.bake_settings.ao_use_clear,margin=2) 
+        O.object.bake(type="NORMAL", use_clear=bake_settings.bake_image_clear,margin=2) 
         save_image(bake_image)    
 
         bake_image.name = org_name + "_COLOR"   
-        O.object.bake(type="DIFFUSE", pass_filter= {'COLOR'}, use_clear=C.scene.bake_settings.ao_use_clear,margin=2)    
+        O.object.bake(type="DIFFUSE", pass_filter= {'COLOR'}, use_clear=bake_settings.bake_image_clear,margin=2)    
         save_image(bake_image)
 
         bake_image.name = org_name
@@ -154,9 +156,9 @@ def Bake_Texture(selected_objects,bake_settings):
     # ----------------------- CLEANUP --------------------#
     C.scene.render.engine = 'BLENDER_EEVEE'
     # cleanup images
-    for img in D.images:
-        if image_name in img.name and "_" in img.name:
-            D.images.remove(img)
+    # for img in D.images:
+    #     if image_name in img.name and "_" in img.name:
+    #         D.images.remove(img)
 
     # cleanup nodes
     for material in all_materials:
@@ -168,7 +170,7 @@ def Bake_Texture(selected_objects,bake_settings):
     return
 
 
-def Bake_On_Plane(material):
+def Bake_On_Plane(material,bake_settings):
 
     # -----------------------SETUP VARS--------------------#
     C = bpy.context
@@ -184,7 +186,7 @@ def Bake_On_Plane(material):
     # -----------------------SETUP ENGINE--------------------#
     if C.scene.render.engine == 'BLENDER_EEVEE':
         C.scene.render.engine = 'CYCLES'
-        C.scene.cycles.samples = bpy.context.scene.bake_settings.pbr_samples
+        C.scene.cycles.samples = bake_settings.pbr_samples
         device = C.scene.cycles.device
         if device != 'GPU':
             try:
@@ -208,7 +210,7 @@ def Bake_On_Plane(material):
 
 
     # mute texture mapping
-    if bpy.context.scene.bake_settings.mute_texture_nodes:
+    if bake_settings.mute_texture_nodes:
         mute_all_texture_mappings(material, True)
 
     # for each input create an image
