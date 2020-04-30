@@ -1,5 +1,5 @@
 import bpy
-from .functions import *
+from . import functions
 from .constants import *
 import mathutils
 import os
@@ -46,7 +46,7 @@ def Bake_Texture(selected_objects,bake_settings):
     image_size = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
     image_name = bake_settings.bake_image_name
         
-    bake_image = create_image(image_name,image_size)
+    bake_image = functions.create_image(image_name,image_size)
 
     
     # -----------------------SETUP NODES--------------------#
@@ -55,9 +55,11 @@ def Bake_Texture(selected_objects,bake_settings):
         nodes = material.node_tree.nodes
         
         # add image texture
-        image_texture_node = add_node(material,Shader_Node_Types.image_texture,"AO Bake")
+        image_texture_node = functions.add_node(material,Shader_Node_Types.image_texture,"Texture Bake")
         image_texture_node.image = bake_image
 
+        # add baked flag
+        material.has_lightmap = True
 
         # -----------------------AO SETUP--------------------#
         # create group data
@@ -77,22 +79,22 @@ def Bake_Texture(selected_objects,bake_settings):
             ao_group.inputs.new('NodeSocketFloat','Occlusion')
             
         # create uv node
-        uv_node = add_node(material,Shader_Node_Types.uv,"Second_UV")     
+        uv_node = functions.add_node(material,Shader_Node_Types.uv,"Second_UV")     
         uv_node.uv_map = uv_name
 
 
-        make_link(material,uv_node.outputs["UV"],image_texture_node.inputs['Vector'])
-        make_link(material,image_texture_node.outputs['Color'],ao_group.inputs['Occlusion'])
+        functions.make_link(material,uv_node.outputs["UV"],image_texture_node.inputs['Vector'])
+        functions.make_link(material,image_texture_node.outputs['Color'],ao_group.inputs['Occlusion'])
 
         # ----------------------- SETUP AO NODE --------------------#
-        ao_node = add_node(material,Shader_Node_Types.ao,"AO")
+        ao_node = functions.add_node(material,Shader_Node_Types.ao,"AO")
         if bake_settings.ao_map:
-            emission_setup(material,ao_node.outputs[1])
+            functions.emission_setup(material,ao_node.outputs[1])
 
 
         # ----------------------- POSITION NODES --------------------#
         # uv node
-        pbr_node = find_node_by_type(nodes,Node_Types.pbr_node)[0]   
+        pbr_node = functions.find_node_by_type(nodes,Node_Types.pbr_node)[0]   
         posOffset = mathutils.Vector((-900, 400))
         loc = pbr_node.location + posOffset
         uv_node.location = loc
@@ -113,35 +115,41 @@ def Bake_Texture(selected_objects,bake_settings):
         O.object.bake(type="EMIT", use_clear=bake_settings.bake_image_clear,margin=2)
     elif (bake_settings.lightmap):
         O.object.bake(type="DIFFUSE", pass_filter= {'COLOR', 'DIRECT', 'INDIRECT','AO'}, use_clear=bake_settings.bake_image_clear,margin=2)
-        save_image(bake_image)
+        functions.save_image(bake_image)
+        if not bake_settings.denoise:
+            return
+
+        # remember orginal name and path
         org_name = bake_image.name
         org_filepath = bake_image.filepath
 
         bake_image.name = org_name + "_NRM"   
         O.object.bake(type="NORMAL", use_clear=bake_settings.bake_image_clear,margin=2) 
-        save_image(bake_image)    
+        functions.save_image(bake_image)    
 
         bake_image.name = org_name + "_COLOR"   
         O.object.bake(type="DIFFUSE", pass_filter= {'COLOR'}, use_clear=bake_settings.bake_image_clear,margin=2)    
-        save_image(bake_image)
+        functions.save_image(bake_image)
 
+        # write back original data
         bake_image.name = org_name
         bake_image.filepath = org_filepath
 
         nrm_image_name = org_name + "_NRM"
-        nrm_image = create_image(nrm_image_name,bake_image.size)
+        nrm_image = functions.create_image(nrm_image_name,bake_image.size)
 
         file_format = os.path.splitext(bake_image.filepath)[1]
         nrm_image.filepath = os.path.dirname(org_filepath) + "\\" + org_name + "_NRM" + file_format
         nrm_image.source = "FILE"
 
         color_image_name = org_name + "_COLOR"
-        color_image = create_image(color_image_name,bake_image.size)
+        color_image = functions.create_image(color_image_name,bake_image.size)
+        
         color_image.filepath = os.path.dirname(org_filepath) + "\\" + org_name + "_COLOR" + file_format
         color_image.source = "FILE"
 
 
-        denoised_image_path = comp_ai_denoise(bake_image,nrm_image,color_image)
+        denoised_image_path = functions.comp_ai_denoise(bake_image,nrm_image,color_image)
 
         bake_image.filepath = denoised_image_path
 
@@ -163,10 +171,10 @@ def Bake_Texture(selected_objects,bake_settings):
     # cleanup nodes
     for material in all_materials:
         nodes = material.node_tree.nodes
-        pbr_node = find_node_by_type(nodes,Node_Types.pbr_node)[0]   
-        remove_node(material,"Emission Bake")
-        remove_node(material,"AO")
-        reconnect_PBR(material, pbr_node)
+        pbr_node = functions.find_node_by_type(nodes,Node_Types.pbr_node)[0]   
+        functions.remove_node(material,"Emission Bake")
+        functions.remove_node(material,"AO")
+        functions.reconnect_PBR(material, pbr_node)
     return
 
 
@@ -178,8 +186,8 @@ def Bake_On_Plane(material,bake_settings):
     O = bpy.ops
 
     nodes = material.node_tree.nodes
-    pbr_node = find_node_by_type(nodes,Node_Types.pbr_node)[0]        
-    pbr_inputs = get_pbr_inputs(pbr_node)
+    pbr_node = functions.find_node_by_type(nodes,Node_Types.pbr_node)[0]        
+    pbr_inputs = functions.get_pbr_inputs(pbr_node)
 
     image_size = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
 
@@ -211,7 +219,7 @@ def Bake_On_Plane(material,bake_settings):
 
     # mute texture mapping
     if bake_settings.mute_texture_nodes:
-        mute_all_texture_mappings(material, True)
+        functions.mute_all_texture_mappings(material, True)
 
     # for each input create an image
     for pbr_input in pbr_inputs.values():
@@ -241,14 +249,14 @@ def Bake_On_Plane(material,bake_settings):
         bake_image = D.images.new(image_name, width=image_size[0], height=image_size[1])
         bake_image.name = image_name
         
-        image_texture_node = add_node(material,Shader_Node_Types.image_texture,"Image Texture Bake")
+        image_texture_node = functions.add_node(material,Shader_Node_Types.image_texture,"Image Texture Bake")
 
         image_texture_node.image = bake_image
         nodes.active = image_texture_node
 
         # -----------------------COPY ORG IMAGE--------------------#
         # copy file settings form original image texture
-        org_img_node = find_node_by_type_recusivly(material,pbr_input.links[0].from_node,Node_Types.image_texture)
+        org_img_node = functions.find_node_by_type_recusivly(material,pbr_input.links[0].from_node,Node_Types.image_texture)
         if org_img_node:
             org_image = org_img_node.image
             bake_image.file_format = 'PNG' if ".png" in org_image.name else "JPEG"     
@@ -265,12 +273,12 @@ def Bake_On_Plane(material,bake_settings):
     # -----------------------BAKING--------------------#
     
         if pbr_input is pbr_inputs["normal_input"]:
-            link_pbr_to_output(material, pbr_node)
+            functions.link_pbr_to_output(material, pbr_node)
             O.object.bake(type="NORMAL", use_clear=True)
         else:
             # if pbr_input is not pbr_inputs.get("base_color_input"):
             #     add_gamma_node(material, pbr_input)
-            emission_setup(material, pbr_input.links[0].from_socket)
+            functions.emission_setup(material, pbr_input.links[0].from_socket)
             O.object.bake(type="EMIT", use_clear=True)
             # if pbr_input is not pbr_inputs.get("base_color_input"):
             #     remove_gamma_node(material, pbr_input)
@@ -282,15 +290,13 @@ def Bake_On_Plane(material,bake_settings):
     C.scene.render.engine = 'BLENDER_EEVEE'
 
     # unmute texture mappings
-    mute_all_texture_mappings(material, False)
+    functions.mute_all_texture_mappings(material, False)
 
     # delete plane
     O.object.delete()
 
     # cleanup nodes
-    remove_node(material,"Emission Bake")
-    remove_node(material,"Image Texture Bake")
-    reconnect_PBR(material, pbr_node)
-
-
+    functions.remove_node(material,"Emission Bake")
+    functions.remove_node(material,"Image Texture Bake")
+    functions.reconnect_PBR(material, pbr_node)
     return
