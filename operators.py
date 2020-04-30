@@ -5,7 +5,9 @@ from .constants import *
 from . import functions
 from .bake import Bake_On_Plane, Bake_Texture
 from .create_new_material import create_bake_material
+from bpy.props import EnumProperty,BoolProperty,PointerProperty, IntProperty,StringProperty
 
+# ----------------------- TEXTURE OPERATORS--------------------#
 
 class GetMaterialByTextureOperator(bpy.types.Operator):
     bl_idname = "scene.select_mat_by_tex"
@@ -24,7 +26,7 @@ class GetMaterialByTextureOperator(bpy.types.Operator):
 
         # image to index not found
         try:
-            sel_image_texture = images[context.scene.texture_panel_settings.texture_index]
+            sel_image_texture = images[context.scene.texture_settings.texture_index]
             if sel_image_texture.name in ('Viewer Node', 'Render Result'):
                 display = False
         except:
@@ -36,7 +38,7 @@ class GetMaterialByTextureOperator(bpy.types.Operator):
         D = bpy.data
         
         images = D.images
-        sel_image_texture = images[context.scene.texture_panel_settings.texture_index]
+        sel_image_texture = images[context.scene.texture_settings.texture_index]
         materials = D.materials
 
         # to print materials with current image texture
@@ -69,30 +71,6 @@ class CleanBakesOperator(bpy.types.Operator):
                 bpy.data.images.remove(image)
         return {'FINISHED'}
 
-class CleanTexturesOperator(bpy.types.Operator):
-    bl_idname = "image.clean_textures"
-    bl_label = "CleanTextures"
-
-    def execute(self, context):
-        for image in bpy.data.images:
-            if not image.users or list(image.size) == [0,0]:
-                bpy.data.images.remove(image)
-        return {'FINISHED'}
-
-class CleanMaterialsOperator(bpy.types.Operator):
-    bl_idname = "material.clean_materials"
-    bl_label = "Clean Materials"
-
-    def execute(self, context):
-        for material in bpy.data.materials:
-            if not material.users:
-                bpy.data.materials.remove(material)
-
-        # for obj in bpy.data.objects:
-        #     functions.select_object(self,obj)
-        #     bpy.ops.object.material_slot_remove_unused()
-        return {'FINISHED'}
-
 class ScaleImageOperator(bpy.types.Operator):
     """Scale all Images on selected Material to specific resolution"""
     bl_idname = "image.scale_image"
@@ -107,7 +85,7 @@ class ScaleImageOperator(bpy.types.Operator):
 
         # image to index not found 
         try:
-            sel_image_texture = images[context.scene.texture_panel_settings.texture_index]
+            sel_image_texture = images[context.scene.texture_settings.texture_index]
             if sel_image_texture.name in ('Viewer Node','Render Result'):
                 display = False
         except:
@@ -120,7 +98,7 @@ class ScaleImageOperator(bpy.types.Operator):
         D = bpy.data
 
         images = D.images
-        sel_image_texture = images[context.scene.texture_panel_settings.texture_index]
+        sel_image_texture = images[context.scene.texture_settings.texture_index]
 
         # get image size for baking
         image_size = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
@@ -148,20 +126,24 @@ class NodeToTextureOperator(bpy.types.Operator):
         # get selcted objects once more without all that curve and emtpy crap
         selected_objects = context.selected_objects
         bake_settings = context.scene.bake_settings
-        texture_panel_settings = context.scene.texture_panel_settings
+        texture_settings = context.scene.texture_settings
 
         # ----------------------- CHECK SELECTION  --------------------#
 
         if active_object.type != 'MESH':
             self.report({'INFO'}, 'No Mesh selected')
             return {'FINISHED'}
-        
+
+        if not active_object.active_material:
+            self.report({'INFO'}, 'No Material on selected Object')
+            return {'FINISHED'}
+            
         for obj in selected_objects:
             if obj.type != 'MESH':
                 obj.select_set(False)
 
         # ----------------------- SET VISIBLITY TO MATERIAL  --------------------#
-        texture_panel_settings.toggle_bake_texture = False
+        texture_settings.toggle_bake_texture = False
 
         # ----------------------- AO  --------------------#
         if bake_settings.ao_map:
@@ -170,7 +152,9 @@ class NodeToTextureOperator(bpy.types.Operator):
         # ----------------------- LIGHTMAP  --------------------#
         if bake_settings.lightmap:
             Bake_Texture(selected_objects,bake_settings)
-            
+        
+        if bake_settings.show_texture_after_bake:
+            texture_settings.toggle_bake_texture = True
 
         # ----------------------- PBR Texture --------------------#
 
@@ -194,39 +178,16 @@ class NodeToTextureOperator(bpy.types.Operator):
             # select active object an change to baked material
             bpy.context.view_layer.objects.active = active_object
             active_object.select_set(True)
-            bpy.ops.object.switch_bake_mat_op()
+            bpy.ops.object.switch_bake_mat_operator()
 
         return {'FINISHED'}
 
-
-
-class BakeAllObjectsOperator(bpy.types.Operator):
-    """By checking the incoming links in the PBR Shader, new Textures are generated that will include all the node transformations."""
-    bl_idname = "object.bake_all_objects"
-    bl_label = "Bake all Objects"
-
-    def execute(self, context):
-        materials = bpy.data.materials
-
-        bpy.ops.mesh.primitive_plane_add()
-        plane = bpy.context.object
-
-        for mat in materials:
-            if "Bake" not in mat.name:
-                bpy.context.view_layer.objects.active = plane
-                bpy.context.active_object.active_material = mat
-                bpy.ops.object.node_to_texture_operator()
-
-        # delete plane
-        bpy.data.objects.get("Plane").select_set(True)
-        bpy.ops.object.delete()
-
-        return {'FINISHED'}
+# ----------------------- VIEW OPERATORS--------------------#
 
 class SwitchBakeMaterialOperator(bpy.types.Operator):
     """Click to switch to baked material"""
-    bl_idname = "object.switch_bake_mat_op"
-    bl_label = "Baked Material"
+    bl_idname = "object.switch_bake_mat_operator"
+    bl_label = "PBR Baked Material"
 
     @classmethod
     def poll(cls, context):
@@ -240,22 +201,19 @@ class SwitchBakeMaterialOperator(bpy.types.Operator):
 
         all_mats = bpy.data.materials
         mat_bake = all_mats.get(active_mat.name + "_Bake") 
-
         
         # for obj in bpy.data.objects:
         for slot in active_obj.material_slots:
             if mat_bake is not None and slot.material is active_mat:
                 slot.material = mat_bake
             else:
-                self.report({'INFO'}, 'Bake textures first')
-
+                self.report({'INFO'}, 'Bake PBR textures first')
 
         return {'FINISHED'}
 
-
 class SwitchOrgMaterialOperator(bpy.types.Operator):
     """Click to switch to original material"""
-    bl_idname = "object.switch_org_mat_op"
+    bl_idname = "object.switch_org_mat_operator"
     bl_label = "Org. Material"
 
     @classmethod
@@ -279,6 +237,44 @@ class SwitchOrgMaterialOperator(bpy.types.Operator):
                 slot.material = mat_org
 
         return {'FINISHED'}
+
+
+class SwitchBakeTextureOperator(bpy.types.Operator):
+    """Click to switch to baked material"""
+    bl_idname = "object.switch_bake_texture_operator"
+    bl_label = "PBR Baked Material"
+
+    show_bake_texture:BoolProperty(default=False)
+    mix_bake_texture:BoolProperty(default=False)
+
+    @classmethod
+    def poll(cls, context):
+        if context.active_object.active_material:
+            if context.active_object.active_material.has_lightmap:
+                return context.active_object.active_material.has_lightmap
+        return False
+
+
+    def execute(self, context):
+        print(context)
+        all_materials = bpy.data.materials
+
+        for mat in all_materials:
+            nodes = mat.node_tree.nodes
+            texture_bake_node = nodes.get("Texture Bake")
+            if texture_bake_node is not None:
+                if self.show_bake_texture:
+                    functions.emission_setup(mat,texture_bake_node.outputs["Color"])
+                else:
+                    pbr_node = functions.find_node_by_type(nodes,Node_Types.pbr_node)[0]   
+                    functions.remove_node(mat,"Emission Bake")
+                    functions.reconnect_PBR(mat, pbr_node)
+
+                
+
+        return {'FINISHED'}
+
+# ----------------------- UV OPERATORS--------------------#
 
 class AddUVOperator(bpy.types.Operator):
     """Add uv layer with layer name entered above"""
@@ -343,7 +339,37 @@ class SetActiveUVOperator(bpy.types.Operator):
                 uv_layers.active_index = self.uv_slot
 
         return {'FINISHED'}
+# ----------------------- CLEAN OPERATORS--------------------#
 
+# class CleanBakesOperator(bpy.types.Operator):
+
+
+class CleanTexturesOperator(bpy.types.Operator):
+    bl_idname = "image.clean_textures"
+    bl_label = "CleanTextures"
+
+    def execute(self, context):
+        for image in bpy.data.images:
+            if not image.users or list(image.size) == [0,0]:
+                bpy.data.images.remove(image)
+        return {'FINISHED'}
+
+class CleanMaterialsOperator(bpy.types.Operator):
+
+    bl_idname = "material.clean_materials"
+    bl_label = "Clean Materials"
+
+    def execute(self, context):
+        for material in bpy.data.materials:
+            if not material.users:
+                bpy.data.materials.remove(material)
+
+        # for obj in bpy.data.objects:
+        #     functions.select_object(self,obj)
+        #     bpy.ops.object.material_slot_remove_unused()
+        return {'FINISHED'}
+
+# ----------------------- FILE OPERATORS--------------------#
 
 class GOVIE_Open_Folder_Operator(bpy.types.Operator):
     bl_idname = "scene.open_folder"

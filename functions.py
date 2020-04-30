@@ -80,7 +80,7 @@ def select_obj_by_mat(self,mat):
 
 def set_image_in_image_editor(self,context): 
     scene = self
-    sel_texture = bpy.data.images[scene.texture_panel_settings.texture_index]
+    sel_texture = bpy.data.images[scene.texture_settings.texture_index]
 
     for area in context.screen.areas :
         if area.type == 'IMAGE_EDITOR' :
@@ -239,6 +239,15 @@ def make_link(material, socket1, socket2):
     links = material.node_tree.links
     links.new(socket1, socket2)
 
+def remove_link(material,socket1,socket2):
+
+    node_tree = material.node_tree
+    links = node_tree.links
+
+    for l in socket1.links:
+        if l.to_socket == socket2:
+            links.remove(l) 
+
 
 def add_gamma_node(material, pbrInput):
     nodeToPrincipledOutput = pbrInput.links[0].from_socket
@@ -258,11 +267,11 @@ def remove_gamma_node(material, pbrInput):
     nodeToPrincipledOutput = gammaNode.inputs[0].links[0].from_socket
 
     make_link(material, nodeToPrincipledOutput, pbrInput)
-    material.node_tree.nodes.remove(gammaNode)
+    material.node_tree.nodes.remove(gammaNode)  
 
-def apply_ao_toggle(self,context): 
+def preview_bake_texture(self,context): 
     all_materials = bpy.data.materials
-    toggle_bake_texture = context.scene.texture_panel_settings.toggle_bake_texture
+    toggle_bake_texture = context.scene.texture_settings.toggle_bake_texture
     for mat in all_materials:
         nodes = mat.node_tree.nodes
         ao_node = nodes.get("AO Bake")
@@ -319,3 +328,4 @@ def remove_node(material,node_name):
     node = nodes.get(node_name)
     if node is not None:
         nodes.remove(node)
+

@@ -56,17 +56,19 @@ class Bake_Settings(bpy.types.PropertyGroup):
     lightmap: BoolProperty(default = False)
     lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
     unwrap: BoolProperty(default= True)
+    denoise: BoolProperty(default=True)
+    show_texture_after_bake: BoolProperty(default=True)
 
 bpy.utils.register_class(Bake_Settings)
 bpy.types.Scene.bake_settings = PointerProperty(type=Bake_Settings)
 
-class Texture_Panel_Settings(bpy.types.PropertyGroup):
+class Texture_Settings(bpy.types.PropertyGroup):
     open_sel_mat_menu:BoolProperty(default=False)
-    toggle_bake_texture:BoolProperty(default=False,update=functions.apply_ao_toggle)
+    toggle_bake_texture:BoolProperty(default=False,update=functions.preview_bake_texture)
     texture_index:IntProperty(name = "Index for Texture List", default = 0, update=functions.set_image_in_image_editor)
 
-bpy.utils.register_class(Texture_Panel_Settings)
-bpy.types.Scene.texture_panel_settings = PointerProperty(type=Texture_Panel_Settings)
+bpy.utils.register_class(Texture_Settings)
+bpy.types.Scene.texture_settings = PointerProperty(type=Texture_Settings)
 
 # HELP PANEL PROPERTIES
 def run_help_operator(self,context):
@@ -77,6 +79,9 @@ bpy.types.Scene.help_tex_tools = BoolProperty(default=False,update=run_help_oper
 # IMAGE PROPERTIES
 bpy.types.Image.org_filepath = StringProperty()
 bpy.types.Image.org_image_name = StringProperty()
+
+# MATERIAL PROPERTIES
+bpy.types.Material.has_lightmap = BoolProperty()
 
 
 
@@ -143,6 +148,8 @@ class NodeToTexturePanel(bpy.types.Panel):
             box.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
             box.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
             box.prop(scene.bake_settings, 'unwrap', text="Unwrap")
+            box.prop(scene.bake_settings, 'denoise', text="Denoise")
+            box.prop(scene.bake_settings, 'show_texture_after_bake', text="Show Texture after Bake")
             
         layout.operator("object.node_to_texture_operator",text="Bake Textures")
         layout.operator("scene.open_folder",icon='FILEBROWSER')
@@ -150,10 +157,11 @@ class NodeToTexturePanel(bpy.types.Panel):
         layout.label(text="VIEW")
         col = layout.column(align=True)
         row = col.row(align=True)
-        row.operator("object.switch_org_mat_op",icon = 'NODE_MATERIAL')
-        row.operator("object.switch_bake_mat_op",icon = 'MATERIAL' )
+        row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="PBR Material")
+        row.operator("object.switch_bake_mat_operator",icon = 'MATERIAL', text="PBR Baked Material")
+        col.separator()
         row = col.row(align=True)
-        row.prop(scene.texture_panel_settings,"toggle_bake_texture", text="Show Material" if scene.texture_panel_settings.toggle_bake_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_panel_settings.toggle_bake_texture else "NODE_MATERIAL")
+        row.prop(scene.texture_settings,"toggle_bake_texture", text="Show Material" if scene.texture_settings.toggle_bake_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.toggle_bake_texture else "NODE_MATERIAL")
 
 
 class TEX_UL_List(bpy.types.UIList):
@@ -225,14 +233,14 @@ class TextureSelectionPanel(bpy.types.Panel):
         data = bpy.data
 
         headline(layout,(0.6,"IMAGE NAME"),(0.5,"SIZE"),(1,"KB"))
-        layout.template_list("TEX_UL_List", "", data, "images", scene.texture_panel_settings, "texture_index")
+        layout.template_list("TEX_UL_List", "", data, "images", scene.texture_settings, "texture_index")
         
         layout.operator("file.unpack_all",text="Unpack")
 
         # Select Material by Texture
         row = layout.row()
-        row.prop(scene.texture_panel_settings,"open_sel_mat_menu",text="Select Material by Texture", icon = 'TRIA_DOWN' if scene.texture_panel_settings.open_sel_mat_menu else 'TRIA_RIGHT' )
-        if scene.texture_panel_settings.open_sel_mat_menu:
+        row.prop(scene.texture_settings,"open_sel_mat_menu",text="Select Material by Texture", icon = 'TRIA_DOWN' if scene.texture_settings.open_sel_mat_menu else 'TRIA_RIGHT' )
+        if scene.texture_settings.open_sel_mat_menu:
             box = layout.box()
             col = box.column(align = True)
             col.operator("scene.select_mat_by_tex",text="Select Material",icon='RESTRICT_SELECT_OFF')
