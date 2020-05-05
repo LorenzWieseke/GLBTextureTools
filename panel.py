@@ -1,9 +1,10 @@
 import bpy
 import os
 from . import functions
+from .panel_ui_list import *
 from .constants import *
 
-from bpy.props import EnumProperty,BoolProperty,PointerProperty, IntProperty,StringProperty
+from bpy.props import EnumProperty,BoolProperty,PointerProperty, IntProperty,StringProperty, CollectionProperty
 
 bpy.types.Scene.img_bake_size = EnumProperty(
     name='Size',
@@ -44,8 +45,12 @@ class Cleanup_Settings(bpy.types.PropertyGroup):
 bpy.utils.register_class(Cleanup_Settings)
 bpy.types.Scene.cleanup_settings = PointerProperty(type=Cleanup_Settings)
 
+test = [('JPEG', 'JPEG', 'Set image format to jpg')]
+
 class Bake_Settings(bpy.types.PropertyGroup):  
+    bake_image_list = []
     open_bake_settings_menu: BoolProperty(default = False)    
+    open_object_bake_list_menu: BoolProperty(default = False)    
     mute_texture_nodes: BoolProperty(default = True)
     pbr_nodes: BoolProperty(default = True)
     pbr_samples: IntProperty(name = "Samples for PBR bake", default = 1)
@@ -55,9 +60,14 @@ class Bake_Settings(bpy.types.PropertyGroup):
     bake_image_clear: BoolProperty(default= True)
     lightmap: BoolProperty(default = False)
     lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
+    lightmap_bakes: EnumProperty(
+    name='Baked Textures',
+    description='List of all the Baked Textures',
+    items=functions.update_bakes_list)
     unwrap: BoolProperty(default= True)
     denoise: BoolProperty(default=True)
     show_texture_after_bake: BoolProperty(default=True)
+    bake_object_index:IntProperty(name = "Index for baked Objects", default = 0)
 
 bpy.utils.register_class(Bake_Settings)
 bpy.types.Scene.bake_settings = PointerProperty(type=Bake_Settings)
@@ -83,13 +93,8 @@ bpy.types.Image.org_image_name = StringProperty()
 # MATERIAL PROPERTIES
 bpy.types.Material.has_lightmap = BoolProperty()
 
-
-
-def clearConsole():
-    print("console cleared")
-    os.system('cls')
-
-clearConsole()
+# OBJECT PROPERTIES
+bpy.types.Object.bake_texture_name = StringProperty()
               
 class ResolutionPanel(bpy.types.Panel):
     bl_idname = "RESOLTUION_PT_scale_image_panel"
@@ -111,18 +116,18 @@ class ResolutionPanel(bpy.types.Panel):
         column.prop(scene,"img_file_format")
  
 
-class NodeToTexturePanel(bpy.types.Panel):
+class BakeTexturePanel(bpy.types.Panel):
     bl_idname = "GLBTEXTOOLS_PT_node_to_texture_panel"
     bl_label = "Baking"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = 'GLB Texture Tools'
-    # bl_parent_id = "TEXTURETOOLS_PT_parent_panel"
     bl_order = 1
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+        data = bpy.data
         bake_settings = bpy.context.scene.bake_settings
     
         row = layout.row()
@@ -145,16 +150,33 @@ class NodeToTexturePanel(bpy.types.Panel):
             row.prop(scene.bake_settings, 'lightmap_samples',  text="Samples")
 
             box.prop(scene.bake_settings, 'bake_image_name',  text="Image Name")
-            box.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
-            box.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
-            box.prop(scene.bake_settings, 'unwrap', text="Unwrap")
-            box.prop(scene.bake_settings, 'denoise', text="Denoise")
-            box.prop(scene.bake_settings, 'show_texture_after_bake', text="Show Texture after Bake")
-            
-        layout.operator("object.node_to_texture_operator",text="Bake Textures")
-        layout.operator("scene.open_folder",icon='FILEBROWSER')
 
-        layout.label(text="VIEW")
+            split = box.split()
+            col = split.column(align=True)
+            # col.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
+            col.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
+            col.prop(scene.bake_settings, 'unwrap', text="Unwrap")
+
+            col = split.column(align=True)
+            col.prop(scene.bake_settings, 'denoise', text="Denoise")
+            col.prop(scene.bake_settings, 'show_texture_after_bake', text="Show Texture after Bake")
+        
+        row = layout.row()
+        row.prop(scene.bake_settings, 'open_object_bake_list_menu', text="Object Bake List", icon = 'TRIA_DOWN' if bake_settings.open_object_bake_list_menu else 'TRIA_RIGHT' )
+        
+        if bake_settings.open_object_bake_list_menu:
+            box = layout.box()        
+            row = box.row()
+            row.prop(scene.bake_settings, 'lightmap_bakes',text="Select Lightmap") 
+            layout.template_list("BAKE_IMAGE_UL_List", "", data, "objects", scene.bake_settings, "bake_object_index")       
+
+
+        row = layout.row(align=True)
+        row.scale_y = 2.0
+        row.operator("object.node_to_texture_operator",text="Bake Textures")
+        row.operator("scene.open_textures_folder",icon='FILEBROWSER')
+
+        layout.label(text="Visiblity")
         col = layout.column(align=True)
         row = col.row(align=True)
         row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="PBR Material")
@@ -163,51 +185,6 @@ class NodeToTexturePanel(bpy.types.Panel):
         row = col.row(align=True)
         row.prop(scene.texture_settings,"toggle_bake_texture", text="Show Material" if scene.texture_settings.toggle_bake_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.toggle_bake_texture else "NODE_MATERIAL")
 
-
-class TEX_UL_List(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
-
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            row = layout.row()
-
-            split = row.split(factor=0.6)
-            split.label(text=str(item.users) + " " +item.name)
-            
-            split = split.split(factor=0.5)
-            split.label(text=str(item.size[0]))
-
-            split = split.split(factor=1)
-            
-            filepath = item.filepath
-            if filepath != '':
-                filesize = functions.get_file_size(filepath)
-                split.label(text=str(filesize).split('.')[0])
-            else:
-                split.label(text="file not saved")
-
-    def filter_items(self, context, data, propname):
-        objects = getattr(data, propname)
-        object_list = objects.items()
-        img_names = [obj[0] for obj in object_list]
-
-        # Default return values.
-        flt_flags = []
-        flt_neworder = []
-        images = []
-        try:
-            active_mat = context.active_object.active_material
-            if active_mat is not None:
-                nodes = active_mat.node_tree.nodes
-                tex_nodes = functions.find_node_by_type(nodes,Node_Types.image_texture)
-                images = [node.image.name for node in tex_nodes]
-            else:
-                images = [image.name for image in bpy.data.images if image.name not in ('Viewer Node','Render Result')]
-        except:
-            pass
-    
-        flt_flags = [self.bitflag_filter_item if name in images else 0 for name in img_names]
-
-        return flt_flags, flt_neworder
 
 def headline(layout,*valueList):
     box = layout.box()

@@ -3,9 +3,17 @@ import bpy
 import os
 from .constants import *
 
-# COMPOSITING
-def comp_ai_denoise(bake_image,nrm_image,color_image):
+def update_bakes_list(bake_settings,context):
+    bake_textures_set = set()
 
+    for obj in bpy.data.objects:
+        if obj.bake_texture_name:
+            bake_textures_set.add((obj.bake_texture_name,obj.bake_texture_name,"Baked Texture Name"))
+    # print(list(bake_textures_set))
+    return list(bake_textures_set)
+
+# COMPOSITING
+def comp_ai_denoise(noisy_image,nrm_image,color_image):
 
     # switch on nodes and get reference
     bpy.context.scene.use_nodes = True
@@ -17,7 +25,7 @@ def comp_ai_denoise(bake_image,nrm_image,color_image):
 
     # bake image
     image_node = tree.nodes.new(type='CompositorNodeImage')
-    image_node.image = bake_image
+    image_node.image = noisy_image
     image_node.location = 0,0
 
     # nrm image
@@ -47,13 +55,13 @@ def comp_ai_denoise(bake_image,nrm_image,color_image):
     links.new(denoise_node.outputs[0], comp_node.inputs[0])
 
     # set output resolution to image res
-    bpy.context.scene.render.resolution_x = bake_image.size[0]
-    bpy.context.scene.render.resolution_y = bake_image.size[1]
+    bpy.context.scene.render.resolution_x = noisy_image.size[0]
+    bpy.context.scene.render.resolution_y = noisy_image.size[1]
 
     filePath = bpy.data.filepath
     path = os.path.dirname(filePath)
 
-    bpy.data.scenes["Scene"].render.filepath = path + "\\textures\\GLBTexTool\\" + bake_image.name + "_Denoise"
+    bpy.data.scenes["Scene"].render.filepath = path + "\\textures\\GLBTexTool\\" + noisy_image.name + "_Denoise"
     bpy.ops.render.render(write_still=True)
     denoised_image_path = bpy.data.scenes["Scene"].render.filepath + "." + bpy.data.scenes["Scene"].render.image_settings.file_format.lower()
     return denoised_image_path
@@ -79,8 +87,7 @@ def select_obj_by_mat(self,mat):
                 select_object(self,obj)
 
 def set_image_in_image_editor(self,context): 
-    scene = self
-    sel_texture = bpy.data.images[scene.texture_settings.texture_index]
+    sel_texture = bpy.data.images[self.texture_index]
 
     for area in context.screen.areas :
         if area.type == 'IMAGE_EDITOR' :
@@ -109,16 +116,9 @@ def save_image(image):
     if file_extention == "targa":
         file_extention = "tga"
 
-    # image.name = filename + "." + file_extention
-
     # change path   
     savepath = path + "\\textures\\GLBTexTool\\" + str(image.size[0]) + "\\" + image.name 
-
     image.filepath_raw = savepath + "." + file_extention
-    
-    # if "Viewer Node" in image.name:
-    #     image.save_render(filepath=savepath)
-    # else:
     image.save()
 
 def create_image(image_name,image_size):
@@ -274,7 +274,7 @@ def preview_bake_texture(self,context):
     toggle_bake_texture = context.scene.texture_settings.toggle_bake_texture
     for mat in all_materials:
         nodes = mat.node_tree.nodes
-        ao_node = nodes.get("AO Bake")
+        ao_node = nodes.get("Texture Bake")
         if ao_node is not None:
             if toggle_bake_texture:
                 emission_setup(mat,ao_node.outputs["Color"])

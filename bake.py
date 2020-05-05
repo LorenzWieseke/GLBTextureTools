@@ -13,6 +13,8 @@ def Bake_Texture(selected_objects,bake_settings):
     uv_name = "Lightmap"
 
     all_materials = set ()
+    image_texture_nodes = set()
+
     slots_array = [obj.material_slots for obj in selected_objects]
     for slots in slots_array:
         for slot in slots:
@@ -47,16 +49,23 @@ def Bake_Texture(selected_objects,bake_settings):
     image_name = bake_settings.bake_image_name
         
     bake_image = functions.create_image(image_name,image_size)
-
     
     # -----------------------SETUP NODES--------------------#
     for material in all_materials:
 
-        nodes = material.node_tree.nodes
+        nodes = material.node_tree.nodes      
         
         # add image texture
         image_texture_node = functions.add_node(material,Shader_Node_Types.image_texture,"Texture Bake")
         image_texture_node.image = bake_image
+
+        # save texture nodes and pbr nodes for later
+        image_texture_nodes.add(image_texture_node)
+        pbr_node = functions.find_node_by_type(nodes,Node_Types.pbr_node)[0]
+
+        metallic_value = pbr_node.inputs["Metallic"].default_value
+        pbr_node["original_metallic"] = metallic_value
+        pbr_node.inputs["Metallic"].default_value = 0
 
         # add baked flag
         material.has_lightmap = True
@@ -114,64 +123,54 @@ def Bake_Texture(selected_objects,bake_settings):
     if (bake_settings.ao_map):
         O.object.bake(type="EMIT", use_clear=bake_settings.bake_image_clear,margin=2)
     elif (bake_settings.lightmap):
+
+        noisy_image_name = image_name + "_NOISY"   
+        noisy_image = functions.create_image(noisy_image_name,bake_image.size)
+        for image_texture_node in image_texture_nodes:
+            image_texture_node.image = noisy_image
         O.object.bake(type="DIFFUSE", pass_filter= {'COLOR', 'DIRECT', 'INDIRECT','AO'}, use_clear=bake_settings.bake_image_clear,margin=2)
-        functions.save_image(bake_image)
+        functions.save_image(noisy_image)
+        
         if not bake_settings.denoise:
+            functions.remove_node(material,"AO")
             return
 
-        # remember orginal name and path
-        org_name = bake_image.name
-        org_filepath = bake_image.filepath
-
-        bake_image.name = org_name + "_NRM"   
-        O.object.bake(type="NORMAL", use_clear=bake_settings.bake_image_clear,margin=2) 
-        functions.save_image(bake_image)    
-
-        bake_image.name = org_name + "_COLOR"   
-        O.object.bake(type="DIFFUSE", pass_filter= {'COLOR'}, use_clear=bake_settings.bake_image_clear,margin=2)    
-        functions.save_image(bake_image)
-
-        # write back original data
-        bake_image.name = org_name
-        bake_image.filepath = org_filepath
-
-        nrm_image_name = org_name + "_NRM"
+        nrm_image_name = image_name + "_NRM"
         nrm_image = functions.create_image(nrm_image_name,bake_image.size)
+        for image_texture_node in image_texture_nodes:
+            image_texture_node.image = nrm_image
+        O.object.bake(type="NORMAL", use_clear=bake_settings.bake_image_clear,margin=2) 
+        functions.save_image(nrm_image)    
 
-        file_format = os.path.splitext(bake_image.filepath)[1]
-        nrm_image.filepath = os.path.dirname(org_filepath) + "\\" + org_name + "_NRM" + file_format
-        nrm_image.source = "FILE"
-
-        color_image_name = org_name + "_COLOR"
+        color_image_name = image_name + "_COLOR"
         color_image = functions.create_image(color_image_name,bake_image.size)
-        
-        color_image.filepath = os.path.dirname(org_filepath) + "\\" + org_name + "_COLOR" + file_format
-        color_image.source = "FILE"
+        for image_texture_node in image_texture_nodes:
+            image_texture_node.image = color_image
+        O.object.bake(type="DIFFUSE", pass_filter= {'COLOR'}, use_clear=bake_settings.bake_image_clear,margin=2)    
+        functions.save_image(color_image)
 
-
-        denoised_image_path = functions.comp_ai_denoise(bake_image,nrm_image,color_image)
-
+        denoised_image_path = functions.comp_ai_denoise(noisy_image,nrm_image,color_image)
         bake_image.filepath = denoised_image_path
+        bake_image.source = "FILE"
+        for image_texture_node in image_texture_nodes:
+            image_texture_node.image = bake_image
 
-        # clear images
-        # D.images.remove(nrm_image)
-        # D.images.remove(color_image)
-
-
-
-
-
+        # show lightmap
+        for area in C.screen.areas :
+            if area.type == 'IMAGE_EDITOR' :
+                    area.spaces.active.image = bake_image
     # ----------------------- CLEANUP --------------------#
     C.scene.render.engine = 'BLENDER_EEVEE'
     # cleanup images
-    # for img in D.images:
-    #     if image_name in img.name and "_" in img.name:
-    #         D.images.remove(img)
+    for img in D.images:
+        if image_name in img.name and ("_COLOR" in img.name or "_NRM" in img.name or "_NOISY" in img.name) :
+            D.images.remove(img)
 
     # cleanup nodes
     for material in all_materials:
         nodes = material.node_tree.nodes
         pbr_node = functions.find_node_by_type(nodes,Node_Types.pbr_node)[0]   
+        pbr_node.inputs["Metallic"].default_value = pbr_node["original_metallic"]
         functions.remove_node(material,"Emission Bake")
         functions.remove_node(material,"AO")
         functions.reconnect_PBR(material, pbr_node)

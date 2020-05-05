@@ -133,14 +133,14 @@ class NodeToTextureOperator(bpy.types.Operator):
         if active_object.type != 'MESH':
             self.report({'INFO'}, 'No Mesh selected')
             return {'FINISHED'}
-
-        if not active_object.active_material:
-            self.report({'INFO'}, 'No Material on selected Object')
-            return {'FINISHED'}
             
         for obj in selected_objects:
             if obj.type != 'MESH':
                 obj.select_set(False)
+
+            if len(obj.material_slots) == 0:
+                self.report({'INFO'}, 'No Material on ' + obj.name)
+                return {'FINISHED'}
 
         # ----------------------- SET VISIBLITY TO MATERIAL  --------------------#
         texture_settings.toggle_bake_texture = False
@@ -155,6 +155,16 @@ class NodeToTextureOperator(bpy.types.Operator):
         
         if bake_settings.show_texture_after_bake:
             texture_settings.toggle_bake_texture = True
+        
+        # add image to bake image list
+        item = (bake_settings.bake_image_name,bake_settings.bake_image_name,"")
+        if not item in bake_settings.bake_image_list:
+            bake_settings.bake_image_list.append(item)
+        
+        for obj in selected_objects:
+            obj.bake_texture_name = bake_settings.bake_image_name
+
+ 
 
         # ----------------------- PBR Texture --------------------#
 
@@ -371,8 +381,8 @@ class CleanMaterialsOperator(bpy.types.Operator):
 
 # ----------------------- FILE OPERATORS--------------------#
 
-class GOVIE_Open_Folder_Operator(bpy.types.Operator):
-    bl_idname = "scene.open_folder"
+class OpenTexturesFolderOperator(bpy.types.Operator):
+    bl_idname = "scene.open_textures_folder"
     bl_label = "Open Folder"
     bl_description = "Open Texture folder if it exists, bake or scale texture to create texture folder"
 
