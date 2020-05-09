@@ -144,10 +144,6 @@ class NodeToTextureOperator(bpy.types.Operator):
 
         # ----------------------- SET VISIBLITY TO MATERIAL  --------------------#
         texture_settings.toggle_bake_texture = False
-
-        # ----------------------- AO  --------------------#
-        if bake_settings.ao_map:
-            Bake_Texture(selected_objects,bake_settings)
     
         # ----------------------- LIGHTMAP  --------------------#
         if bake_settings.lightmap:
@@ -158,8 +154,8 @@ class NodeToTextureOperator(bpy.types.Operator):
         
         # add image to bake image list
         item = (bake_settings.bake_image_name,bake_settings.bake_image_name,"")
-        if not item in bake_settings.bake_image_list:
-            bake_settings.bake_image_list.append(item)
+        if not item in bake_settings.lightmap_list:
+            bake_settings.lightmap_list.append(item)
         
         for obj in selected_objects:
             obj.bake_texture_name = bake_settings.bake_image_name

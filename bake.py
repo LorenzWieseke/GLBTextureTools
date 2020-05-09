@@ -1,179 +1,32 @@
 import bpy
 from . import functions
+from .functions import BakeUtilities
+
 from .constants import *
 import mathutils
 import os
 
 def Bake_Texture(selected_objects,bake_settings):
-    # -----------------------SETUP VARS--------------------#
-    C = bpy.context
-    D = bpy.data
-    O = bpy.ops
-
-    uv_name = "Lightmap"
-
-    all_materials = set ()
-    image_texture_nodes = set()
-
-    slots_array = [obj.material_slots for obj in selected_objects]
-    for slots in slots_array:
-        for slot in slots:
-            all_materials.add(slot.material)
+    # ----------------------- CREATE INSTANCE --------------------#
+    ligthmap_utilities = BakeUtilities(selected_objects,bake_settings)  
 
     # -----------------------SETUP UV'S--------------------#
-    if bake_settings.unwrap:
-        O.object.add_uv(uv_name=uv_name)
-        O.object.transform_apply(location=False, rotation=False, scale=True)
-        O.object.mode_set(mode = 'EDIT')
-        O.mesh.select_all(action = 'SELECT')
-        O.uv.smart_project(island_margin=0.08)
-        O.object.mode_set(mode = 'OBJECT')
+    ligthmap_utilities.unwrap_selected()
 
     # -----------------------SETUP ENGINE--------------------#
-    if C.scene.render.engine == 'BLENDER_EEVEE':
-        C.scene.render.engine = 'CYCLES'
-        if bake_settings.ao_map:
-            C.scene.cycles.samples = bake_settings.ao_samples
-        if bake_settings.lightmap:
-            C.scene.cycles.samples = bake_settings.lightmap_samples
-        device = C.scene.cycles.device
-        if device != 'GPU':
-            try:
-                device = 'GPU'
-            except:
-                device = 'CPU'
-                print("GPU not Supported, leaving at CPU")
-    
-    # -----------------------SETUP IMAGE--------------------#
-    image_size = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
-    image_name = bake_settings.bake_image_name
-        
-    bake_image = functions.create_image(image_name,image_size)
+    ligthmap_utilities.setup_engine()
     
     # -----------------------SETUP NODES--------------------#
-    for material in all_materials:
-
-        nodes = material.node_tree.nodes      
-        
-        # add image texture
-        image_texture_node = functions.add_node(material,Shader_Node_Types.image_texture,"Texture Bake")
-        image_texture_node.image = bake_image
-
-        # save texture nodes and pbr nodes for later
-        image_texture_nodes.add(image_texture_node)
-        pbr_node = functions.find_node_by_type(nodes,Node_Types.pbr_node)[0]
-
-        metallic_value = pbr_node.inputs["Metallic"].default_value
-        pbr_node["original_metallic"] = metallic_value
-        pbr_node.inputs["Metallic"].default_value = 0
-
-        # add baked flag
-        material.has_lightmap = True
-
-        # -----------------------AO SETUP--------------------#
-        # create group data
-        gltf_settings = bpy.data.node_groups.get('glTF Settings')
-        if gltf_settings is None:
-            bpy.data.node_groups.new('glTF Settings', 'ShaderNodeTree')
-        
-        # add group to node tree
-        ao_group = nodes.get('glTF Settings')
-        if ao_group is None:
-            ao_group = nodes.new('ShaderNodeGroup')
-            ao_group.name = 'glTF Settings'
-            ao_group.node_tree = bpy.data.node_groups['glTF Settings']
-
-        # create group inputs
-        if ao_group.inputs.get('Occlusion') is None:
-            ao_group.inputs.new('NodeSocketFloat','Occlusion')
-            
-        # create uv node
-        uv_node = functions.add_node(material,Shader_Node_Types.uv,"Second_UV")     
-        uv_node.uv_map = uv_name
-
-
-        functions.make_link(material,uv_node.outputs["UV"],image_texture_node.inputs['Vector'])
-        functions.make_link(material,image_texture_node.outputs['Color'],ao_group.inputs['Occlusion'])
-
-        # ----------------------- SETUP AO NODE --------------------#
-        ao_node = functions.add_node(material,Shader_Node_Types.ao,"AO")
-        if bake_settings.ao_map:
-            functions.emission_setup(material,ao_node.outputs[1])
-
-
-        # ----------------------- POSITION NODES --------------------#
-        # uv node
-        pbr_node = functions.find_node_by_type(nodes,Node_Types.pbr_node)[0]   
-        posOffset = mathutils.Vector((-900, 400))
-        loc = pbr_node.location + posOffset
-        uv_node.location = loc
-
-        # image texture
-        loc = loc + mathutils.Vector((300, 0))
-        image_texture_node.location = loc
-
-        # ao node
-        loc = loc + mathutils.Vector((300, 0))
-        ao_group.location = loc
-
-        nodes.active = image_texture_node
+    ligthmap_utilities.add_gltf_setup()
 
     # ----------------------- BAKING --------------------#
-    # bake once for all selcted objects
-    if (bake_settings.ao_map):
-        O.object.bake(type="EMIT", use_clear=bake_settings.bake_image_clear,margin=2)
-    elif (bake_settings.lightmap):
+    ligthmap_utilities.save_metal_value()
+    ligthmap_utilities.bake()
+    ligthmap_utilities.load_metal_value()
+    ligthmap_utilities.cleanup()
 
-        noisy_image_name = image_name + "_NOISY"   
-        noisy_image = functions.create_image(noisy_image_name,bake_image.size)
-        for image_texture_node in image_texture_nodes:
-            image_texture_node.image = noisy_image
-        O.object.bake(type="DIFFUSE", pass_filter= {'COLOR', 'DIRECT', 'INDIRECT','AO'}, use_clear=bake_settings.bake_image_clear,margin=2)
-        functions.save_image(noisy_image)
-        
-        if not bake_settings.denoise:
-            functions.remove_node(material,"AO")
-            return
 
-        nrm_image_name = image_name + "_NRM"
-        nrm_image = functions.create_image(nrm_image_name,bake_image.size)
-        for image_texture_node in image_texture_nodes:
-            image_texture_node.image = nrm_image
-        O.object.bake(type="NORMAL", use_clear=bake_settings.bake_image_clear,margin=2) 
-        functions.save_image(nrm_image)    
-
-        color_image_name = image_name + "_COLOR"
-        color_image = functions.create_image(color_image_name,bake_image.size)
-        for image_texture_node in image_texture_nodes:
-            image_texture_node.image = color_image
-        O.object.bake(type="DIFFUSE", pass_filter= {'COLOR'}, use_clear=bake_settings.bake_image_clear,margin=2)    
-        functions.save_image(color_image)
-
-        denoised_image_path = functions.comp_ai_denoise(noisy_image,nrm_image,color_image)
-        bake_image.filepath = denoised_image_path
-        bake_image.source = "FILE"
-        for image_texture_node in image_texture_nodes:
-            image_texture_node.image = bake_image
-
-        # show lightmap
-        for area in C.screen.areas :
-            if area.type == 'IMAGE_EDITOR' :
-                    area.spaces.active.image = bake_image
-    # ----------------------- CLEANUP --------------------#
-    C.scene.render.engine = 'BLENDER_EEVEE'
-    # cleanup images
-    for img in D.images:
-        if image_name in img.name and ("_COLOR" in img.name or "_NRM" in img.name or "_NOISY" in img.name) :
-            D.images.remove(img)
-
-    # cleanup nodes
-    for material in all_materials:
-        nodes = material.node_tree.nodes
-        pbr_node = functions.find_node_by_type(nodes,Node_Types.pbr_node)[0]   
-        pbr_node.inputs["Metallic"].default_value = pbr_node["original_metallic"]
-        functions.remove_node(material,"Emission Bake")
-        functions.remove_node(material,"AO")
-        functions.reconnect_PBR(material, pbr_node)
+    
     return
 
 

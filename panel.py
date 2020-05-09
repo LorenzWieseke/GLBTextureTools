@@ -45,10 +45,7 @@ class Cleanup_Settings(bpy.types.PropertyGroup):
 bpy.utils.register_class(Cleanup_Settings)
 bpy.types.Scene.cleanup_settings = PointerProperty(type=Cleanup_Settings)
 
-test = [('JPEG', 'JPEG', 'Set image format to jpg')]
-
 class Bake_Settings(bpy.types.PropertyGroup):  
-    bake_image_list = []
     open_bake_settings_menu: BoolProperty(default = False)    
     open_object_bake_list_menu: BoolProperty(default = False)    
     mute_texture_nodes: BoolProperty(default = True)
@@ -56,10 +53,13 @@ class Bake_Settings(bpy.types.PropertyGroup):
     pbr_samples: IntProperty(name = "Samples for PBR bake", default = 1)
     ao_map: BoolProperty(default = False)
     ao_samples: IntProperty(name = "Samples for AO bake", default = 2)
+
     bake_image_name: StringProperty(default="Lightmap")
     bake_image_clear: BoolProperty(default= True)
+
     lightmap: BoolProperty(default = False)
     lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
+    lightmap_list = []
     lightmap_bakes: EnumProperty(
     name='Baked Textures',
     description='List of all the Baked Textures',
@@ -68,6 +68,8 @@ class Bake_Settings(bpy.types.PropertyGroup):
     denoise: BoolProperty(default=True)
     show_texture_after_bake: BoolProperty(default=True)
     bake_object_index:IntProperty(name = "Index for baked Objects", default = 0)
+    uv_name="Lightmap"
+
 
 bpy.utils.register_class(Bake_Settings)
 bpy.types.Scene.bake_settings = PointerProperty(type=Bake_Settings)
