@@ -164,8 +164,10 @@ class BakeUtilities():
         if channel == "NOISY":
             O.object.bake(type="DIFFUSE", pass_filter={'COLOR', 'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=2)
         if channel == "NRM":
+            self.C.scene.cycles.samples = 1
             O.object.bake(type="NORMAL", use_clear=self.bake_settings.bake_image_clear, margin=2)
         if channel == "COLOR":
+            self.C.scene.cycles.samples = 1
             O.object.bake(type="DIFFUSE", pass_filter={'COLOR'}, use_clear=self.bake_settings.bake_image_clear, margin=2)
 
         save_image(image)

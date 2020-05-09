@@ -1,8 +1,6 @@
 
 add option to switch back to org. image size -- done
 use uv-packmaster if installed
-lightmap -> set metallic from 1 to 0.99 to be able to bake lightmap
+
 add option to add ligtmap to base color
 
-samples for normal and color bake always 1
-unwrap and clear bake of deletes image
