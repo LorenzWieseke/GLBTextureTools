@@ -20,9 +20,14 @@ def Bake_Texture(selected_objects,bake_settings):
     ligthmap_utilities.add_gltf_setup()
 
     # ----------------------- BAKING --------------------#
-    ligthmap_utilities.save_metal_value()
-    ligthmap_utilities.bake()
-    ligthmap_utilities.load_metal_value()
+    if bake_settings.lightmap:
+        ligthmap_utilities.save_metal_value()
+        ligthmap_utilities.bake(Bake_Types.lightmap)
+        ligthmap_utilities.load_metal_value()
+    
+    if bake_settings.ao_map:
+        ligthmap_utilities.bake(Bake_Types.ao)
+
     ligthmap_utilities.cleanup()
 
 

@@ -4,7 +4,7 @@ from . import functions
 from .panel_ui_list import *
 from .constants import *
 
-from bpy.props import EnumProperty,BoolProperty,PointerProperty, IntProperty,StringProperty, CollectionProperty
+from bpy.props import EnumProperty,BoolProperty,PointerProperty, IntProperty,StringProperty, CollectionProperty, FloatProperty
 
 bpy.types.Scene.img_bake_size = EnumProperty(
     name='Size',
@@ -45,30 +45,44 @@ class Cleanup_Settings(bpy.types.PropertyGroup):
 bpy.utils.register_class(Cleanup_Settings)
 bpy.types.Scene.cleanup_settings = PointerProperty(type=Cleanup_Settings)
 
+def update_pbr_button(self,context):
+    self["lightmap"] = False
+    self["ao_map"] = False
+
+def update_lightmap_button(self,context):
+    self["pbr_nodes"] = False
+    self["ao_map"] = False
+
+def update_ao_button(self,context):
+    self["lightmap"] = False
+    self["pbr_nodes"] = False
+
 class Bake_Settings(bpy.types.PropertyGroup):  
     open_bake_settings_menu: BoolProperty(default = False)    
     open_object_bake_list_menu: BoolProperty(default = False)    
-    mute_texture_nodes: BoolProperty(default = True)
-    pbr_nodes: BoolProperty(default = True)
+    pbr_nodes: BoolProperty(default = True,update=update_pbr_button)
     pbr_samples: IntProperty(name = "Samples for PBR bake", default = 1)
-    ao_map: BoolProperty(default = False)
+    
+    ao_map: BoolProperty(default = False,update=update_ao_button)
     ao_samples: IntProperty(name = "Samples for AO bake", default = 2)
 
-    bake_image_name: StringProperty(default="Lightmap")
-    bake_image_clear: BoolProperty(default= True)
-
-    lightmap: BoolProperty(default = False)
+    lightmap: BoolProperty(default = False,update=update_lightmap_button)
     lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
     lightmap_list = []
-    lightmap_bakes: EnumProperty(
-    name='Baked Textures',
-    description='List of all the Baked Textures',
-    items=functions.update_bakes_list)
+    lightmap_bakes: EnumProperty(name='Baked Textures',description='List of all the Baked Textures',items=functions.update_bakes_list)
+   
+    bake_image_name: StringProperty(default="Lightmap")
+    bake_image_clear: BoolProperty(default= True)
+    mute_texture_nodes: BoolProperty(default = True)
+    bake_margin:IntProperty(default=2)
+    unwrap_margin:FloatProperty(default=0.08)
     unwrap: BoolProperty(default= True)
     denoise: BoolProperty(default=True)
     show_texture_after_bake: BoolProperty(default=True)
     bake_object_index:IntProperty(name = "Index for baked Objects", default = 0)
+
     uv_name="Lightmap"
+    cleanup_textures=False
 
 
 bpy.utils.register_class(Bake_Settings)
@@ -136,6 +150,7 @@ class BakeTexturePanel(bpy.types.Panel):
         row.prop(scene.bake_settings, 'open_bake_settings_menu', text="Bake Settings", icon = 'TRIA_DOWN' if bake_settings.open_bake_settings_menu else 'TRIA_RIGHT' )
         
         if bake_settings.open_bake_settings_menu:
+
             box = layout.box()                
 
             col = box.column(align = True)
@@ -150,26 +165,40 @@ class BakeTexturePanel(bpy.types.Panel):
             row = col.row(align = True)     
             row.prop(scene.bake_settings, 'lightmap',  text="Lightmap",toggle = True)
             row.prop(scene.bake_settings, 'lightmap_samples',  text="Samples")
+            
+            if bake_settings.pbr_nodes:
+                col.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
+                col.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
+
 
             box.prop(scene.bake_settings, 'bake_image_name',  text="Image Name")
 
+            if bake_settings.lightmap:
+                box.prop(scene.world.node_tree.nodes["Background"].inputs[1],'default_value',text="World Influence")
+
+            if bake_settings.ao_map:
+                box.prop(scene.world.light_settings,"distance",text="AO Distance")
+                
+            box.prop(scene.bake_settings, 'unwrap_margin', text="UV Margin")
+            box.prop(scene.bake_settings, 'bake_margin', text="Bake Margin")
+            
             split = box.split()
             col = split.column(align=True)
-            # col.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
-            col.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
             col.prop(scene.bake_settings, 'unwrap', text="Unwrap")
+            col.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
 
             col = split.column(align=True)
             col.prop(scene.bake_settings, 'denoise', text="Denoise")
             col.prop(scene.bake_settings, 'show_texture_after_bake', text="Show Texture after Bake")
-        
+            
         row = layout.row()
         row.prop(scene.bake_settings, 'open_object_bake_list_menu', text="Object Bake List", icon = 'TRIA_DOWN' if bake_settings.open_object_bake_list_menu else 'TRIA_RIGHT' )
         
         if bake_settings.open_object_bake_list_menu:
             box = layout.box()        
             row = box.row()
-            row.prop(scene.bake_settings, 'lightmap_bakes',text="Select Lightmap") 
+            row.prop(scene.bake_settings, 'lightmap_bakes',text="") 
+            row.operator("object.select_lightmap_objects",text="",icon="RESTRICT_SELECT_OFF")
             layout.template_list("BAKE_IMAGE_UL_List", "", data, "objects", scene.bake_settings, "bake_object_index")       
 
 

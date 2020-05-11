@@ -13,3 +13,8 @@ class Shader_Node_Types:
     ao = "ShaderNodeAmbientOcclusion"
     uv = "ShaderNodeUVMap"
     comp_image_node = 'CompositorNodeImage'
+
+class Bake_Types:
+    pbr = ["EMISSION"]
+    lightmap = ["NOISY", "NRM", "COLOR"]
+    ao = ["AO","NRM","COLOR"]

@@ -13,10 +13,12 @@ class BakeUtilities():
     image_texture_nodes = set()
     bake_settings = None
     bake_image = None
+    render_engine = None
 
     def __init__(self, selected_objects, bake_settings):
         self.C = bpy.context
         self.D = bpy.data
+        self.render_engine = self.C.scene.render.engine
 
         all_materials = set()
         slots_array = [obj.material_slots for obj in selected_objects]
@@ -34,9 +36,15 @@ class BakeUtilities():
         self.bake_image = create_image(image_name, image_size)
 
     def setup_engine(self):
-        if self.C.scene.render.engine == 'BLENDER_EEVEE':
+        if self.render_engine == 'BLENDER_EEVEE':
             self.C.scene.render.engine = 'CYCLES'
-        self.C.scene.cycles.samples = self.bake_settings.lightmap_samples
+        
+        # setup samples
+        if self.bake_settings.lightmap:
+            self.C.scene.cycles.samples = self.bake_settings.lightmap_samples
+        if self.bake_settings.ao_map:
+            self.C.scene.cycles.samples = self.bake_settings.ao_samples
+
         device = self.C.scene.cycles.device
         if device != 'GPU':
             try:
@@ -51,22 +59,28 @@ class BakeUtilities():
             self.O.object.transform_apply(location=False, rotation=False, scale=True)
             self.O.object.mode_set(mode='EDIT')
             self.O.mesh.select_all(action='SELECT')
-            self.O.uv.smart_project(island_margin=0.08)
+            self.O.uv.smart_project(island_margin=self.bake_settings.unwrap_margin)
             self.O.object.mode_set(mode='OBJECT')
 
     def add_gltf_settings_node(self, material):
+        nodes = material.node_tree.nodes
+         # create group data
         gltf_settings = bpy.data.node_groups.get('glTF Settings')
         if gltf_settings is None:
             bpy.data.node_groups.new('glTF Settings', 'ShaderNodeTree')
-
+        
         # add group to node tree
-        gltf_settings = add_node(material, 'ShaderNodeGroup', 'glTF Settings')
+        gltf_settings_node = nodes.get('glTF Settings')
+        if gltf_settings_node is None:
+            gltf_settings_node = nodes.new('ShaderNodeGroup')
+            gltf_settings_node.name = 'glTF Settings'
+            gltf_settings_node.node_tree = bpy.data.node_groups['glTF Settings']
 
         # create group inputs
-        if gltf_settings.inputs.get('Occlusion') is None:
-            gltf_settings.inputs.new('NodeSocketFloat', 'Occlusion')
+        if gltf_settings_node.inputs.get('Occlusion') is None:
+            gltf_settings_node.inputs.new('NodeSocketFloat','Occlusion')
 
-        return gltf_settings
+        return gltf_settings_node
 
     def add_image_texture_node(self, material):
         # add image texture
@@ -131,12 +145,12 @@ class BakeUtilities():
             make_link(material, uv_node.outputs["UV"],image_texture_node.inputs['Vector'])
             make_link(material, image_texture_node.outputs['Color'], gltf_settings_node.inputs['Occlusion'])
 
-    def bake(self):
-        channels_to_bake = ["NOISY", "NRM", "COLOR" ]
+    def bake(self,bake_type):
+        channels_to_bake = bake_type
         baked_images = []
 
-        if not self.bake_settings.denoise:
-            channel = "NOISY"
+        if not self.bake_settings.denoise:              
+            channel = bake_type[0]
             self.bake_and_save_image(self.bake_image,channel)
             return
 
@@ -147,12 +161,10 @@ class BakeUtilities():
             baked_images.append(bake_image)
 
         if len(baked_images) == 3:
-            denoised_image_path = comp_ai_denoise(baked_images[0],baked_images[1],baked_images[2])
+            denoised_image_path = comp_ai_denoise(baked_images[0],baked_images[1],baked_images[2],)
             self.bake_image.filepath = denoised_image_path
             self.bake_image.source = "FILE"
             self.change_image_in_nodes(self.bake_image)
-        # else:
-        #     self.bake_image.filepath = baked_images[0].filepath
 
     def change_image_in_nodes(self,image):
         for image_texture_node in self.image_texture_nodes:
@@ -162,25 +174,30 @@ class BakeUtilities():
         self.change_image_in_nodes(image)
 
         if channel == "NOISY":
-            O.object.bake(type="DIFFUSE", pass_filter={'COLOR', 'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=2)
+            O.object.bake(type="DIFFUSE", pass_filter={'COLOR', 'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+        
+        if channel == "AO":
+            O.object.bake(type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+        
         if channel == "NRM":
             self.C.scene.cycles.samples = 1
-            O.object.bake(type="NORMAL", use_clear=self.bake_settings.bake_image_clear, margin=2)
+            O.object.bake(type="NORMAL", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
         if channel == "COLOR":
             self.C.scene.cycles.samples = 1
-            O.object.bake(type="DIFFUSE", pass_filter={'COLOR'}, use_clear=self.bake_settings.bake_image_clear, margin=2)
+            O.object.bake(type="DIFFUSE", pass_filter={'COLOR'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
 
         save_image(image)
 
         return image
 
     def cleanup(self):
-        self.C.scene.render.engine = 'BLENDER_EEVEE'
+        self.C.scene.render.engine = self.render_engine
 
         # cleanup images
-        for img in self.D.images:
-            if self.bake_image.name in img.name and ("_COLOR" in img.name or "_NRM" in img.name or "_NOISY" in img.name) :
-                self.D.images.remove(img)
+        if self.bake_settings.cleanup_textures:
+            for img in self.D.images:
+                if self.bake_image.name in img.name and ("_COLOR" in img.name or "_NRM" in img.name or "_NOISY" in img.name) :
+                    self.D.images.remove(img)
 
         # show image
         show_image_in_image_editor(self.bake_image)
@@ -196,17 +213,17 @@ def update_bakes_list(bake_settings, context):
     return list(bake_textures_set)
 
 # COMPOSITING
-
-
 def comp_ai_denoise(noisy_image, nrm_image, color_image):
 
     # switch on nodes and get reference
-    bpy.context.scene.use_nodes = True
+    if not bpy.context.scene.use_nodes:
+        bpy.context.scene.use_nodes = True
+
     tree = bpy.context.scene.node_tree
 
     # clear default nodes
-    for node in tree.nodes:
-        tree.nodes.remove(node)
+    # for node in tree.nodes:
+    #     tree.nodes.remove(node)
 
     # bake image
     image_node = tree.nodes.new(type='CompositorNodeImage')
@@ -251,6 +268,12 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
     bpy.ops.render.render(write_still=True)
     denoised_image_path = bpy.data.scenes["Scene"].render.filepath + "." + \
         bpy.data.scenes["Scene"].render.image_settings.file_format.lower()
+
+    # cleanup
+    comp_nodes = [image_node,nrm_image_node,color_image_node,denoise_node,comp_node]
+    for node in comp_nodes:
+        tree.nodes.remove(node)
+
     return denoised_image_path
 
 def select_object(self, obj):

@@ -3,4 +3,5 @@ add option to switch back to org. image size -- done
 use uv-packmaster if installed
 
 add option to add ligtmap to base color
+reconstruct node tree in compositor
 

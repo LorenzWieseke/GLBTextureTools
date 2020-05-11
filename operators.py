@@ -7,6 +7,34 @@ from .bake import Bake_On_Plane, Bake_Texture
 from .create_new_material import create_bake_material
 from bpy.props import EnumProperty,BoolProperty,PointerProperty, IntProperty,StringProperty
 
+# ----------------------- LIGHTAP OPERATORS--------------------#
+class SelectLightmapObjectsOperator(bpy.types.Operator):
+    """Select all Objects in the list that have the according lightmap attached to them. Makes it easy to rebake multiple Objects"""
+    bl_idname = "object.select_lightmap_objects"
+    bl_label = "Select Lightmap Objects"
+    
+    @classmethod
+    def poll(cls, context):
+        # if len(context.scene.bake_settings.lightmap_list) > 0:
+        #     return True
+        # return False
+        return True
+
+    def execute(self, context):
+
+        C = context
+        D = bpy.data
+
+        bake_settings = context.scene.bake_settings
+        objects = D.objects
+        bake_settings.bake_image_name = bake_settings.lightmap_bakes
+
+        for obj in objects:
+            if obj.bake_texture_name == bake_settings.lightmap_bakes:
+                obj.select_set(True)
+
+        return {'FINISHED'}
+
 # ----------------------- TEXTURE OPERATORS--------------------#
 
 class GetMaterialByTextureOperator(bpy.types.Operator):
@@ -146,7 +174,7 @@ class NodeToTextureOperator(bpy.types.Operator):
         texture_settings.toggle_bake_texture = False
     
         # ----------------------- LIGHTMAP  --------------------#
-        if bake_settings.lightmap:
+        if bake_settings.lightmap or bake_settings.ao_map:
             Bake_Texture(selected_objects,bake_settings)
         
         if bake_settings.show_texture_after_bake:
@@ -243,7 +271,6 @@ class SwitchOrgMaterialOperator(bpy.types.Operator):
                 slot.material = mat_org
 
         return {'FINISHED'}
-
 
 class SwitchBakeTextureOperator(bpy.types.Operator):
     """Click to switch to baked material"""
