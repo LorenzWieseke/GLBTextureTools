@@ -52,10 +52,12 @@ def update_pbr_button(self,context):
 def update_lightmap_button(self,context):
     self["pbr_nodes"] = False
     self["ao_map"] = False
+    self["bake_image_name"] = "Lightmap"
 
 def update_ao_button(self,context):
     self["lightmap"] = False
     self["pbr_nodes"] = False
+    self["bake_image_name"] = "AO"
 
 class Bake_Settings(bpy.types.PropertyGroup):  
     open_bake_settings_menu: BoolProperty(default = False)    
@@ -90,8 +92,9 @@ bpy.types.Scene.bake_settings = PointerProperty(type=Bake_Settings)
 
 class Texture_Settings(bpy.types.PropertyGroup):
     open_sel_mat_menu:BoolProperty(default=False)
-    toggle_bake_texture:BoolProperty(default=False,update=functions.preview_bake_texture)
-    texture_index:IntProperty(name = "Index for Texture List", default = 0, update=functions.set_image_in_image_editor)
+    toggle_lightmap_texture:BoolProperty(default=False,update=functions.preview_bake_texture)
+    toggle_ao_texture:BoolProperty(default=False,update=functions.preview_bake_texture)
+    texture_index:IntProperty(name = "Index for Texture List", default = 0, update=functions.show_selected_image_in_image_editor)
 
 bpy.utils.register_class(Texture_Settings)
 bpy.types.Scene.texture_settings = PointerProperty(type=Texture_Settings)
@@ -106,10 +109,10 @@ bpy.types.Scene.help_tex_tools = BoolProperty(default=False,update=run_help_oper
 bpy.types.Image.org_filepath = StringProperty()
 bpy.types.Image.org_image_name = StringProperty()
 
-# MATERIAL PROPERTIES
-bpy.types.Material.has_lightmap = BoolProperty()
+
 
 # OBJECT PROPERTIES
+bpy.types.Object.has_lightmap = BoolProperty()
 bpy.types.Object.bake_texture_name = StringProperty()
               
 class ResolutionPanel(bpy.types.Panel):
@@ -194,6 +197,7 @@ class BakeTexturePanel(bpy.types.Panel):
         row = layout.row()
         row.prop(scene.bake_settings, 'open_object_bake_list_menu', text="Object Bake List", icon = 'TRIA_DOWN' if bake_settings.open_object_bake_list_menu else 'TRIA_RIGHT' )
         
+        # BAKE LIST
         if bake_settings.open_object_bake_list_menu:
             box = layout.box()        
             row = box.row()
@@ -206,7 +210,8 @@ class BakeTexturePanel(bpy.types.Panel):
         row.scale_y = 2.0
         row.operator("object.node_to_texture_operator",text="Bake Textures")
         row.operator("scene.open_textures_folder",icon='FILEBROWSER')
-
+        
+        # VISIBILITY
         layout.label(text="Visiblity")
         col = layout.column(align=True)
         row = col.row(align=True)
@@ -214,7 +219,7 @@ class BakeTexturePanel(bpy.types.Panel):
         row.operator("object.switch_bake_mat_operator",icon = 'MATERIAL', text="PBR Baked Material")
         col.separator()
         row = col.row(align=True)
-        row.prop(scene.texture_settings,"toggle_bake_texture", text="Show Material" if scene.texture_settings.toggle_bake_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.toggle_bake_texture else "NODE_MATERIAL")
+        row.prop(scene.texture_settings,"toggle_lightmap_texture", text="Show Material" if scene.texture_settings.toggle_lightmap_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.toggle_lightmap_texture else "NODE_MATERIAL")
 
 
 def headline(layout,*valueList):
@@ -274,12 +279,15 @@ class CleanupPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
-        data = bpy.data
         
         row = layout.row()
-        row.operator("image.clean_textures",text="Clean Textures",icon = 'ORPHAN_DATA')
-        row.operator("material.clean_materials",text="Clean Materials",icon = 'ORPHAN_DATA')
+        row.operator("image.clean_textures",text="Clean Textures",icon = 'OUTLINER_OB_IMAGE')
+        row.operator("material.clean_materials",text="Clean Materials",icon = 'NODE_MATERIAL')
+
+        row = layout.row()
+        row.operator("material.remove_lightmap",text="Clean Lightmap",icon = 'MOD_UVPROJECT')
+        row.operator("material.remove_ao_map",text="Clean AO Map",icon = 'TRASH')
+
 
 
 class UVPanel(bpy.types.Panel):
@@ -292,7 +300,6 @@ class UVPanel(bpy.types.Panel):
     bl_order = 4
 
     def draw(self, context):
-        scene = context.scene
         layout = self.layout
 
         uv_settings = context.scene.uv_settings

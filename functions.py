@@ -14,6 +14,7 @@ class BakeUtilities():
     bake_settings = None
     bake_image = None
     render_engine = None
+    selected_objects = None
 
     def __init__(self, selected_objects, bake_settings):
         self.C = bpy.context
@@ -26,6 +27,7 @@ class BakeUtilities():
             for slot in slots:
                 all_materials.add(slot.material)
 
+        self.selected_objects = selected_objects
         self.all_materials = all_materials
         self.bake_settings = bake_settings
 
@@ -83,9 +85,11 @@ class BakeUtilities():
         return gltf_settings_node
 
     def add_image_texture_node(self, material):
+        nodes = material.node_tree.nodes
         # add image texture
-        image_texture_node = add_node(material, Shader_Node_Types.image_texture, "Texture Bake")
+        image_texture_node = add_node(material, Shader_Node_Types.image_texture, self.bake_settings.bake_image_name)
         image_texture_node.image = self.bake_image
+        nodes.active = image_texture_node
 
         # save texture nodes and pbr nodes for later
         self.image_texture_nodes.add(image_texture_node)
@@ -132,18 +136,32 @@ class BakeUtilities():
 
         nodes.active = image_texture_node
 
-    def add_gltf_setup(self):
+    def add_node_setup(self):
         for material in self.all_materials:
-            uv_node = self.add_uv_node(material)
-            image_texture_node = self.add_image_texture_node(material)
-            gltf_settings_node = self.add_gltf_settings_node(material)
 
-            # position
-            self.position_gltf_setup_nodes(material,uv_node,image_texture_node,gltf_settings_node)
+            if self.bake_settings.ao_map:
+                uv_node = self.add_uv_node(material)
+                image_texture_node = self.add_image_texture_node(material)
+                gltf_settings_node = self.add_gltf_settings_node(material)
 
-            # linking
-            make_link(material, uv_node.outputs["UV"],image_texture_node.inputs['Vector'])
-            make_link(material, image_texture_node.outputs['Color'], gltf_settings_node.inputs['Occlusion'])
+                # position
+                self.position_gltf_setup_nodes(material,uv_node,image_texture_node,gltf_settings_node)
+
+                # linking
+                make_link(material, uv_node.outputs["UV"],image_texture_node.inputs['Vector'])
+                make_link(material, image_texture_node.outputs['Color'], gltf_settings_node.inputs['Occlusion'])
+
+            if self.bake_settings.lightmap:
+                image_texture_node = self.add_image_texture_node(material)
+                uv_node = self.add_uv_node(material)
+                # position
+                image_texture_node.location =  mathutils.Vector((-500, 200))
+                uv_node.location = mathutils.Vector((-700, 200))
+
+                # linking
+                pbr_node = find_node_by_type(material.node_tree.nodes, Node_Types.pbr_node)[0]
+                make_link(material, image_texture_node.outputs['Color'], pbr_node.inputs['Emission'])
+                make_link(material, uv_node.outputs["UV"],image_texture_node.inputs['Vector'])        
 
     def bake(self,bake_type):
         channels_to_bake = bake_type
@@ -168,7 +186,8 @@ class BakeUtilities():
 
     def change_image_in_nodes(self,image):
         for image_texture_node in self.image_texture_nodes:
-            image_texture_node.image = image
+            if image_texture_node.name == self.bake_settings.bake_image_name:
+                image_texture_node.image = image
 
     def bake_and_save_image(self, image, channel):
         self.change_image_in_nodes(image)
@@ -189,6 +208,10 @@ class BakeUtilities():
         save_image(image)
 
         return image
+
+    def add_lightmap_flag(self):
+         for obj in self.selected_objects:
+             obj.has_lightmap = True
 
     def cleanup(self):
         self.C.scene.render.engine = self.render_engine
@@ -212,7 +235,7 @@ def update_bakes_list(bake_settings, context):
     # print(list(bake_textures_set))
     return list(bake_textures_set)
 
-# COMPOSITING
+# -----------------------COMPOSITING--------------------#
 def comp_ai_denoise(noisy_image, nrm_image, color_image):
 
     # switch on nodes and get reference
@@ -276,6 +299,8 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
 
     return denoised_image_path
 
+# -----------------------OBJECT --------------------#
+
 def select_object(self, obj):
     C = bpy.context
     try:
@@ -284,7 +309,6 @@ def select_object(self, obj):
         obj.select_set(True)
     except:
         self.report({'INFO'}, "Object not in View Layer")
-
 
 def select_obj_by_mat(self, mat):
     D = bpy.data
@@ -295,18 +319,33 @@ def select_obj_by_mat(self, mat):
             if mat in object_materials:
                 select_object(self, obj)
 
+# -----------------------VISIBILITY --------------------#
 
-def set_image_in_image_editor(self,context):
+def show_selected_image_in_image_editor(self,context):
     sel_texture = bpy.data.images[self.texture_index]
     show_image_in_image_editor(sel_texture)
     
-
 def show_image_in_image_editor(image):
     for area in bpy.context.screen.areas:
         if area.type == 'IMAGE_EDITOR':
             area.spaces.active.image = image
 
+def preview_bake_texture(self, context):
+    all_materials = bpy.data.materials
+    bake_settings = context.scene.bake_settings
+    toggle_lightmap_texture = context.scene.texture_settings.toggle_lightmap_texture
+    for mat in all_materials:
+        nodes = mat.node_tree.nodes
+        ao_node = nodes.get(bake_settings.bake_image_name)
+        if ao_node is not None:
+            if toggle_lightmap_texture:
+                emission_setup(mat, ao_node.outputs["Color"])
+            else:
+                pbr_node = find_node_by_type(nodes, Node_Types.pbr_node)[0]
+                remove_node(mat, "Emission Bake")
+                reconnect_PBR(mat, pbr_node)
 
+# -----------------------IMAGE --------------------#
 def save_image(image):
 
     filePath = bpy.data.filepath
@@ -336,7 +375,6 @@ def save_image(image):
     image.filepath_raw = savepath + "." + file_extention
     image.save()
 
-
 def create_image(image_name, image_size):
     D = bpy.data
     # find image
@@ -359,7 +397,6 @@ def create_image(image_name, image_size):
 
     return image
 
-
 def get_file_size(filepath):
     size = "Unpack Files"
     try:
@@ -371,7 +408,6 @@ def get_file_size(filepath):
         # print("error getting file path for " + filepath)
 
     return (size)
-
 
 def scale_image(image, new_size):
     if (image.org_filepath != ''):
@@ -386,7 +422,7 @@ def scale_image(image, new_size):
         image.scale(new_size[0], new_size[1])
         save_image(image)
 
-
+# -----------------------CHECKING --------------------#
 def check_only_one_pbr(self, material):
     check_ok = True
     # get pbr shader
@@ -414,7 +450,6 @@ def check_is_org_material(self, material):
 
     return check_ok
 
-
 def clean_empty_materials(self):
     for obj in bpy.data.objects:
         for slot in obj.material_slots:
@@ -425,7 +460,7 @@ def clean_empty_materials(self):
                 obj.select_set(True)
                 bpy.ops.object.material_slot_remove()
 
-
+# -----------------------NODES --------------------#
 def get_pbr_inputs(pbr_node):
 
     base_color_input = pbr_node.inputs["Base Color"]
@@ -438,11 +473,9 @@ def get_pbr_inputs(pbr_node):
                   "specular_input": specular_input, "roughness_input": roughness_input, "normal_input": normal_input}
     return pbr_inputs
 
-
 def find_node_by_type(nodes, node_type):
     nodes_found = [n for n in nodes if n.type == node_type]
     return nodes_found
-
 
 def find_node_by_type_recusivly(material, note_to_start, node_type, del_nodes_inbetween=False):
     nodes = material.node_tree.nodes
@@ -456,7 +489,6 @@ def find_node_by_type_recusivly(material, note_to_start, node_type, del_nodes_in
                 nodes.remove(note_to_start)
             return find_node_by_type_recusivly(material, current_node, node_type, del_nodes_inbetween)
 
-
 def find_node_by_name_recusivly(node, idname):
     if node.bl_idname == idname:
         return node
@@ -466,11 +498,9 @@ def find_node_by_name_recusivly(node, idname):
             current_node = link.from_node
             return find_node_by_name_recusivly(current_node, idname)
 
-
 def make_link(material, socket1, socket2):
     links = material.node_tree.links
     links.new(socket1, socket2)
-
 
 def remove_link(material, socket1, socket2):
 
@@ -481,8 +511,7 @@ def remove_link(material, socket1, socket2):
         if l.to_socket == socket2:
             links.remove(l)
 
-
-def add_gamma_node(material, pbrInput):
+def add_in_gamme_node(material, pbrInput):
     nodeToPrincipledOutput = pbrInput.links[0].from_socket
 
     gammaNode = material.node_tree.nodes.new("ShaderNodeGamma")
@@ -493,7 +522,6 @@ def add_gamma_node(material, pbrInput):
     make_link(material, nodeToPrincipledOutput, gammaNode.inputs["Color"])
     make_link(material, gammaNode.outputs["Color"], pbrInput)
 
-
 def remove_gamma_node(material, pbrInput):
     nodes = material.node_tree.nodes
     gammaNode = nodes.get("Gamma Bake")
@@ -501,22 +529,6 @@ def remove_gamma_node(material, pbrInput):
 
     make_link(material, nodeToPrincipledOutput, pbrInput)
     material.node_tree.nodes.remove(gammaNode)
-
-
-def preview_bake_texture(self, context):
-    all_materials = bpy.data.materials
-    toggle_bake_texture = context.scene.texture_settings.toggle_bake_texture
-    for mat in all_materials:
-        nodes = mat.node_tree.nodes
-        ao_node = nodes.get("Texture Bake")
-        if ao_node is not None:
-            if toggle_bake_texture:
-                emission_setup(mat, ao_node.outputs["Color"])
-            else:
-                pbr_node = find_node_by_type(nodes, Node_Types.pbr_node)[0]
-                remove_node(mat, "Emission Bake")
-                reconnect_PBR(mat, pbr_node)
-
 
 def emission_setup(material, node_output):
     nodes = material.node_tree.nodes
@@ -532,12 +544,10 @@ def emission_setup(material, node_output):
     emission_output = emission_node.outputs[0]
     make_link(material, emission_output, surface_input)
 
-
 def link_pbr_to_output(material, pbr_node):
     nodes = material.node_tree.nodes
     surface_input = nodes.get("Material Output").inputs[0]
     make_link(material, pbr_node.outputs[0], surface_input)
-
 
 def reconnect_PBR(material, pbrNode):
     nodes = material.node_tree.nodes
@@ -545,13 +555,11 @@ def reconnect_PBR(material, pbrNode):
     surface_input = nodes.get("Material Output").inputs[0]
     make_link(material, pbr_output, surface_input)
 
-
 def mute_all_texture_mappings(material, do_mute):
     nodes = material.node_tree.nodes
     for node in nodes:
         if node.bl_idname == "ShaderNodeMapping":
             node.mute = do_mute
-
 
 def add_node(material, shader_node_type, node_name):
     nodes = material.node_tree.nodes
@@ -561,7 +569,6 @@ def add_node(material, shader_node_type, node_name):
         new_node.name = node_name
         new_node.label = node_name
     return new_node
-
 
 def remove_node(material, node_name):
     nodes = material.node_tree.nodes

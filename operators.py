@@ -171,14 +171,14 @@ class NodeToTextureOperator(bpy.types.Operator):
                 return {'FINISHED'}
 
         # ----------------------- SET VISIBLITY TO MATERIAL  --------------------#
-        texture_settings.toggle_bake_texture = False
+        texture_settings.toggle_lightmap_texture = False
     
         # ----------------------- LIGHTMAP  --------------------#
         if bake_settings.lightmap or bake_settings.ao_map:
             Bake_Texture(selected_objects,bake_settings)
         
         if bake_settings.show_texture_after_bake:
-            texture_settings.toggle_bake_texture = True
+            texture_settings.toggle_lightmap_texture = True
         
         # add image to bake image list
         item = (bake_settings.bake_image_name,bake_settings.bake_image_name,"")
@@ -272,41 +272,6 @@ class SwitchOrgMaterialOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class SwitchBakeTextureOperator(bpy.types.Operator):
-    """Click to switch to baked material"""
-    bl_idname = "object.switch_bake_texture_operator"
-    bl_label = "PBR Baked Material"
-
-    show_bake_texture:BoolProperty(default=False)
-    mix_bake_texture:BoolProperty(default=False)
-
-    @classmethod
-    def poll(cls, context):
-        if context.active_object.active_material:
-            if context.active_object.active_material.has_lightmap:
-                return context.active_object.active_material.has_lightmap
-        return False
-
-
-    def execute(self, context):
-        print(context)
-        all_materials = bpy.data.materials
-
-        for mat in all_materials:
-            nodes = mat.node_tree.nodes
-            texture_bake_node = nodes.get("Texture Bake")
-            if texture_bake_node is not None:
-                if self.show_bake_texture:
-                    functions.emission_setup(mat,texture_bake_node.outputs["Color"])
-                else:
-                    pbr_node = functions.find_node_by_type(nodes,Node_Types.pbr_node)[0]   
-                    functions.remove_node(mat,"Emission Bake")
-                    functions.reconnect_PBR(mat, pbr_node)
-
-                
-
-        return {'FINISHED'}
-
 # ----------------------- UV OPERATORS--------------------#
 
 class AddUVOperator(bpy.types.Operator):
@@ -375,11 +340,55 @@ class SetActiveUVOperator(bpy.types.Operator):
 # ----------------------- CLEAN OPERATORS--------------------#
 
 # class CleanBakesOperator(bpy.types.Operator):
+class RemoveLightmapOperator(bpy.types.Operator):
+    bl_idname = "material.remove_lightmap"
+    bl_label = "Remove Lightmap"
 
+    def execute(self, context):
+
+        selected_objects = context.selected_objects
+        all_materials = set()
+        slots_array = [obj.material_slots for obj in selected_objects]
+        for slots in slots_array:
+            for slot in slots:
+                all_materials.add(slot.material)
+
+        for mat in all_materials:
+            functions.remove_node(mat,"Lightmap")
+
+        #remove ligtmap flag
+        for obj in selected_objects:
+            obj.has_lightmap = False 
+            
+        return {'FINISHED'}
+
+class RemoveAOOperator(bpy.types.Operator):
+    bl_idname = "material.remove_ao_map"
+    bl_label = "Remove AO map"
+
+    def execute(self, context):
+        bake_settings = context.scene.bake_settings
+        selected_objects = context.selected_objects
+        all_materials = set()
+        slots_array = [obj.material_slots for obj in selected_objects]
+        for slots in slots_array:
+            for slot in slots:
+                all_materials.add(slot.material)
+
+        for mat in all_materials:
+            functions.remove_node(mat,"AO")
+            functions.remove_node(mat,"Second_UV")
+            functions.remove_node(mat,"glTF Settings")
+
+        #remove ligtmap flag
+        for obj in selected_objects:
+            obj.has_lightmap = False
+            
+        return {'FINISHED'}
 
 class CleanTexturesOperator(bpy.types.Operator):
     bl_idname = "image.clean_textures"
-    bl_label = "CleanTextures"
+    bl_label = "Clean Textures"
 
     def execute(self, context):
         for image in bpy.data.images:
