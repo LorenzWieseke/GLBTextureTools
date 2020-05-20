@@ -3,6 +3,10 @@
     "python.autoComplete.addBrackets": true,
     "blender.addon.reloadOnSave": true,
     "python.linting.pylintEnabled": true,
-    "python.linting.enabled": true
+    "python.linting.enabled": true,
+    "python.autoComplete.extraPaths": [
+        "c:/3D Animation/blender_autocomplete/2.82"
+    ]
+
     
 }

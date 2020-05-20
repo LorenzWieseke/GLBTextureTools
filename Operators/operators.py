@@ -1,14 +1,17 @@
 import os
 import subprocess
 import bpy
-from .constants import *
-from . import functions
-from .bake import Bake_On_Plane, Bake_Texture
-from .create_new_material import create_bake_material
-from bpy.props import EnumProperty,BoolProperty,PointerProperty, IntProperty,StringProperty
+# from bpy.props import *
+
+from .. Functions import node_functions
+from .. Functions import image_functions
+from .. Bake import bake_utilities
+from .. Bake import bake_manager
+from .. Functions import constants
+
 
 # ----------------------- LIGHTAP OPERATORS--------------------#
-class SelectLightmapObjectsOperator(bpy.types.Operator):
+class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
     """Select all Objects in the list that have the according lightmap attached to them. Makes it easy to rebake multiple Objects"""
     bl_idname = "object.select_lightmap_objects"
     bl_label = "Select Lightmap Objects"
@@ -25,7 +28,7 @@ class SelectLightmapObjectsOperator(bpy.types.Operator):
         C = context
         D = bpy.data
 
-        bake_settings = context.scene.bake_settings
+        bake_settings = C.scene.bake_settings
         objects = D.objects
         bake_settings.bake_image_name = bake_settings.lightmap_bakes
 
@@ -37,7 +40,7 @@ class SelectLightmapObjectsOperator(bpy.types.Operator):
 
 # ----------------------- TEXTURE OPERATORS--------------------#
 
-class GetMaterialByTextureOperator(bpy.types.Operator):
+class GTT_GetMaterialByTextureOperator(bpy.types.Operator):
     bl_idname = "scene.select_mat_by_tex"
     bl_label = "Select Material By Texture"
     bl_description = "Selecting all materials in scene that use the selected texture"
@@ -75,21 +78,21 @@ class GetMaterialByTextureOperator(bpy.types.Operator):
 
         for mat in materials:
             nodes = mat.node_tree.nodes
-            tex_node_type = Node_Types.image_texture
-            tex_nodes = functions.find_node_by_type(nodes,tex_node_type)
+            tex_node_type = constants.Node_Types.image_texture
+            tex_nodes = node_functions.find_node_by_type(nodes,tex_node_type)
             
             # if texture node in current node tree
             if len(tex_nodes) > 0:
                 images = [node.image for node in tex_nodes]
                 if sel_image_texture in images:
                     materials_found.append(mat.name)
-                    functions.select_obj_by_mat(self,mat)
+                    node_functions.select_obj_by_mat(self,mat)
                     
 
         return {"FINISHED"}
 
 
-class CleanBakesOperator(bpy.types.Operator):
+class GTT_CleanBakesOperator(bpy.types.Operator):
     bl_idname = "image.clean_bakes"
     bl_label = "CleanTextures"
 
@@ -99,7 +102,7 @@ class CleanBakesOperator(bpy.types.Operator):
                 bpy.data.images.remove(image)
         return {'FINISHED'}
 
-class ScaleImageOperator(bpy.types.Operator):
+class GTT_ScaleImageOperator(bpy.types.Operator):
     """Scale all Images on selected Material to specific resolution"""
     bl_idname = "image.scale_image"
     bl_label = "Scale Images"
@@ -121,20 +124,26 @@ class ScaleImageOperator(bpy.types.Operator):
         return display
 
     def execute(self, context):
-
-        C = context
         D = bpy.data
+        
+        selected_objects = context.selected_objects
+        texture_settings = context.scene.texture_settings
+        image_size = [int(context.scene.img_bake_size),int(context.scene.img_bake_size)]
+        
 
         images = D.images
-        sel_image_texture = images[context.scene.texture_settings.texture_index]
+        sel_image_texture = images[texture_settings.texture_index]
+        all_images = image_functions.get_all_images_in_selected_objects(selected_objects)
 
-        # get image size for baking
-        image_size = [int(C.scene.img_bake_size),int(C.scene.img_bake_size)]
-        functions.scale_image(sel_image_texture,image_size)
+        if texture_settings.operate_on_all_textures:
+            for img in all_images:
+                image_functions.scale_image(img,image_size)
+        else:
+            image_functions.scale_image(sel_image_texture,image_size)
 
         return {'FINISHED'}
 
-class NodeToTextureOperator(bpy.types.Operator):
+class GTT_NodeToTextureOperator(bpy.types.Operator):
     """Bake all attached Textures"""
     bl_idname = "object.node_to_texture_operator"
     bl_label = "Simple Object Operator"
@@ -175,50 +184,24 @@ class NodeToTextureOperator(bpy.types.Operator):
     
         # ----------------------- LIGHTMAP  --------------------#
         if bake_settings.lightmap or bake_settings.ao_map:
-            Bake_Texture(selected_objects,bake_settings)
+            bake_manager.bake_texture(self,selected_objects,bake_settings)
         
-        if bake_settings.show_texture_after_bake:
-            texture_settings.toggle_lightmap_texture = True
-        
-        # add image to bake image list
-        item = (bake_settings.bake_image_name,bake_settings.bake_image_name,"")
-        if not item in bake_settings.lightmap_list:
-            bake_settings.lightmap_list.append(item)
-        
-        for obj in selected_objects:
-            obj.bake_texture_name = bake_settings.bake_image_name
-
- 
+            if bake_settings.show_texture_after_bake:
+                texture_settings.toggle_lightmap_texture = True
+                        
+            for obj in selected_objects:
+                obj.bake_texture_name = bake_settings.bake_image_name
 
         # ----------------------- PBR Texture --------------------#
-
-        # for each material, set it to fake to save it und copy it with org. name + "_Bake"
-        # for materials in material_slots:
-        #     material = materials.material
-
         if bake_settings.pbr_nodes:
-            material = context.active_object.active_material
-            material.use_fake_user = True
-
-            # error checking
-            check_ok = functions.check_only_one_pbr(self,material) and functions.check_is_org_material(self,material)
-            if not check_ok :
-                return
-            
-            Bake_On_Plane(material,bake_settings)
-
-            create_bake_material(material)
-
-            # select active object an change to baked material
-            bpy.context.view_layer.objects.active = active_object
-            active_object.select_set(True)
-            bpy.ops.object.switch_bake_mat_operator()
+            selected_objects = context.selected_objects            
+            bake_manager.bake_on_plane(self,selected_objects,bake_settings)
 
         return {'FINISHED'}
 
 # ----------------------- VIEW OPERATORS--------------------#
 
-class SwitchBakeMaterialOperator(bpy.types.Operator):
+class GTT_SwitchBakeMaterialOperator(bpy.types.Operator):
     """Click to switch to baked material"""
     bl_idname = "object.switch_bake_mat_operator"
     bl_label = "PBR Baked Material"
@@ -245,7 +228,7 @@ class SwitchBakeMaterialOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class SwitchOrgMaterialOperator(bpy.types.Operator):
+class GTT_SwitchOrgMaterialOperator(bpy.types.Operator):
     """Click to switch to original material"""
     bl_idname = "object.switch_org_mat_operator"
     bl_label = "Org. Material"
@@ -274,7 +257,7 @@ class SwitchOrgMaterialOperator(bpy.types.Operator):
 
 # ----------------------- UV OPERATORS--------------------#
 
-class AddUVOperator(bpy.types.Operator):
+class GTT_AddUVOperator(bpy.types.Operator):
     """Add uv layer with layer name entered above"""
     bl_idname = "object.add_uv"
     bl_label = "Add UV to all selected objects"
@@ -296,13 +279,14 @@ class AddUVOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class RemoveUVOperator(bpy.types.Operator):
+class GTT_RemoveUVOperator(bpy.types.Operator):
     """Delete all uv layers found in uv_slot entered above"""
     bl_idname = "object.remove_uv"
     bl_label = "Remove UV"
 
-    uv_slot:bpy.props.IntProperty()
+    uv_slot: bpy.props.IntProperty()
 
+    
     def execute(self, context):
         sel_objects = context.selected_objects
         self.uv_slot -= 1
@@ -317,7 +301,7 @@ class RemoveUVOperator(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class SetActiveUVOperator(bpy.types.Operator):
+class GTT_SetActiveUVOperator(bpy.types.Operator):
     """Set the acive uv to the slot entered above"""
     bl_idname = "object.set_active_uv"
     bl_label = "Set Active UV"
@@ -340,13 +324,14 @@ class SetActiveUVOperator(bpy.types.Operator):
 # ----------------------- CLEAN OPERATORS--------------------#
 
 # class CleanBakesOperator(bpy.types.Operator):
-class RemoveLightmapOperator(bpy.types.Operator):
+class GTT_RemoveLightmapOperator(bpy.types.Operator):
     bl_idname = "material.remove_lightmap"
     bl_label = "Remove Lightmap"
 
     def execute(self, context):
 
         selected_objects = context.selected_objects
+        bake_settings = context.scene.bake_settings
         all_materials = set()
         slots_array = [obj.material_slots for obj in selected_objects]
         for slots in slots_array:
@@ -354,7 +339,7 @@ class RemoveLightmapOperator(bpy.types.Operator):
                 all_materials.add(slot.material)
 
         for mat in all_materials:
-            functions.remove_node(mat,"Lightmap")
+            node_functions.remove_node(mat,bake_settings.texture_node_lightmap)
 
         #remove ligtmap flag
         for obj in selected_objects:
@@ -362,7 +347,7 @@ class RemoveLightmapOperator(bpy.types.Operator):
             
         return {'FINISHED'}
 
-class RemoveAOOperator(bpy.types.Operator):
+class GTT_RemoveAOOperator(bpy.types.Operator):
     bl_idname = "material.remove_ao_map"
     bl_label = "Remove AO map"
 
@@ -376,9 +361,9 @@ class RemoveAOOperator(bpy.types.Operator):
                 all_materials.add(slot.material)
 
         for mat in all_materials:
-            functions.remove_node(mat,"AO")
-            functions.remove_node(mat,"Second_UV")
-            functions.remove_node(mat,"glTF Settings")
+            node_functions.remove_node(mat,bake_settings.texture_node_ao)
+            node_functions.remove_node(mat,"Second_UV")
+            node_functions.remove_node(mat,"glTF Settings")
 
         #remove ligtmap flag
         for obj in selected_objects:
@@ -386,7 +371,7 @@ class RemoveAOOperator(bpy.types.Operator):
             
         return {'FINISHED'}
 
-class CleanTexturesOperator(bpy.types.Operator):
+class GTT_CleanTexturesOperator(bpy.types.Operator):
     bl_idname = "image.clean_textures"
     bl_label = "Clean Textures"
 
@@ -396,7 +381,7 @@ class CleanTexturesOperator(bpy.types.Operator):
                 bpy.data.images.remove(image)
         return {'FINISHED'}
 
-class CleanMaterialsOperator(bpy.types.Operator):
+class GTT_CleanMaterialsOperator(bpy.types.Operator):
 
     bl_idname = "material.clean_materials"
     bl_label = "Clean Materials"
@@ -407,13 +392,13 @@ class CleanMaterialsOperator(bpy.types.Operator):
                 bpy.data.materials.remove(material)
 
         # for obj in bpy.data.objects:
-        #     functions.select_object(self,obj)
+        #     node_functions.select_object(self,obj)
         #     bpy.ops.object.material_slot_remove_unused()
         return {'FINISHED'}
 
 # ----------------------- FILE OPERATORS--------------------#
 
-class OpenTexturesFolderOperator(bpy.types.Operator):
+class GTT_OpenTexturesFolderOperator(bpy.types.Operator):
     bl_idname = "scene.open_textures_folder"
     bl_label = "Open Folder"
     bl_description = "Open Texture folder if it exists, bake or scale texture to create texture folder"

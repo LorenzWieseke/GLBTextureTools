@@ -1,7 +1,9 @@
 import bpy
-from . import functions
+from .. Functions import node_functions
+from .. Functions import image_functions
+from .. Functions import constants
 
-class TEX_UL_List(bpy.types.UIList):
+class GTT_TEX_UL_List(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
 
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
@@ -17,36 +19,41 @@ class TEX_UL_List(bpy.types.UIList):
             
             filepath = item.filepath
             if filepath != '':
-                filesize = functions.get_file_size(filepath)
+                filesize = image_functions.get_file_size(filepath)
                 split.label(text=str(filesize).split('.')[0])
             else:
                 split.label(text="file not saved")
 
     def filter_items(self, context, data, propname):
-        objects = getattr(data, propname)
-        object_list = objects.items()
-        img_names = [obj[0] for obj in object_list]
+        texture_settings = context.scene.texture_settings
+        selected_objects = context.selected_objects
 
+        all_materials = set()
+        all_image_names = [image.name for image in data.images]
+
+        slots_array = [obj.material_slots for obj in selected_objects]
+        for slots in slots_array:
+            for slot in slots:
+                all_materials.add(slot.material)
+ 
         # Default return values.
         flt_flags = []
         flt_neworder = []
         images = []
-        try:
-            active_mat = context.active_object.active_material
-            if active_mat is not None:
-                nodes = active_mat.node_tree.nodes
-                tex_nodes = functions.find_node_by_type(nodes,Node_Types.image_texture)
-                images = [node.image.name for node in tex_nodes]
-            else:
-                images = [image.name for image in bpy.data.images if image.name not in ('Viewer Node','Render Result')]
-        except:
-            pass
-    
-        flt_flags = [self.bitflag_filter_item if name in images else 0 for name in img_names]
+
+        if texture_settings.show_all_textures:
+            images = [image.name for image in data.images if image.name not in ('Viewer Node','Render Result')]
+        else:
+            for mat in all_materials:
+                nodes = mat.node_tree.nodes
+                tex_nodes = node_functions.find_node_by_type(nodes,constants.Node_Types.image_texture)
+                [images.append(node.image.name) for node in tex_nodes]
+
+        flt_flags = [self.bitflag_filter_item if name in images else 0 for name in all_image_names]
 
         return flt_flags, flt_neworder
 
-class BAKE_IMAGE_UL_List(bpy.types.UIList):
+class GTT_BAKE_IMAGE_UL_List(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
 
         if self.layout_type in {'DEFAULT', 'COMPACT'}:

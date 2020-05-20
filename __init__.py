@@ -22,12 +22,31 @@ bl_info = {
     "category": "Generic"
 }
 
-from . import auto_load
-
-auto_load.init()
+from . import Functions, Panels, Properties, Operators, Bake
 
 def register():
-    auto_load.register()
+    Functions.register()
+    Panels.register()
+    Properties.register()
+    Operators.register()
+    Bake.register()
+
 
 def unregister():
-    auto_load.unregister()
+    Functions.unregister()
+    Panels.unregister()
+    Properties.unregister()
+    Operators.unregister()
+    Bake.unregister()
+    
+
+# from . import auto_load
+
+# auto_load.init()
+# classes = auto_load.get_classes()
+
+# def register():
+#     auto_load.register()
+
+# def unregister():
+#     auto_load.unregister()

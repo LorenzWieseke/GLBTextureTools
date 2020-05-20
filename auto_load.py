@@ -23,6 +23,9 @@ def init():
     modules = get_all_submodules(Path(__file__).parent)
     ordered_classes = get_ordered_classes_to_register(modules)
 
+def get_classes():
+    return ordered_classes
+
 def register():
     for cls in ordered_classes:
         bpy.utils.register_class(cls)
