@@ -1,7 +1,7 @@
 import bpy.ops as O
 import bpy
 import os
-from .constants import *
+from .. Functions import constants
 import mathutils
 
 
@@ -72,37 +72,13 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
 
     return denoised_image_path
 
-# -----------------------OBJECT --------------------#
-
-def select_object(self, obj):
-    C = bpy.context
-    try:
-        O.object.select_all(action='DESELECT')
-        C.view_layer.objects.active = obj
-        obj.select_set(True)
-    except:
-        self.report({'INFO'}, "Object not in View Layer")
-
-def select_obj_by_mat(self, mat):
-    D = bpy.data
-    for obj in D.objects:
-        if obj.type == "MESH":
-            object_materials = [
-                slot.material for slot in obj.material_slots]
-            if mat in object_materials:
-                select_object(self, obj)
-
-
-
-# -----------------------IMAGE --------------------#
-
 # -----------------------CHECKING --------------------#
 def check_only_one_pbr(self, material):
     check_ok = True
     # get pbr shader
     nodes = material.node_tree.nodes
-    pbr_node_type = Node_Types.pbr_node
-    pbr_nodes = find_node_by_type(nodes, pbr_node_type)
+    pbr_node_type = constants.Node_Types.pbr_node
+    pbr_nodes = get_node_by_type(nodes, pbr_node_type)
 
     # check only one pbr node
     if len(pbr_nodes) == 0:
@@ -147,11 +123,11 @@ def get_pbr_inputs(pbr_node):
                   "specular_input": specular_input, "roughness_input": roughness_input, "normal_input": normal_input}
     return pbr_inputs
 
-def find_node_by_type(nodes, node_type):
+def get_node_by_type(nodes, node_type):
     nodes_found = [n for n in nodes if n.type == node_type]
     return nodes_found
 
-def find_node_by_type_recusivly(material, note_to_start, node_type, del_nodes_inbetween=False):
+def get_node_by_type_recusivly(material, note_to_start, node_type, del_nodes_inbetween=False):
     nodes = material.node_tree.nodes
     if note_to_start.type == node_type:
         return note_to_start
@@ -159,18 +135,18 @@ def find_node_by_type_recusivly(material, note_to_start, node_type, del_nodes_in
     for input in note_to_start.inputs:
         for link in input.links:
             current_node = link.from_node
-            if (del_nodes_inbetween and note_to_start.type != Node_Types.normal_map and note_to_start.type != Node_Types.bump_map):
+            if (del_nodes_inbetween and note_to_start.type != constants.Node_Types.normal_map and note_to_start.type != constants.Node_Types.bump_map):
                 nodes.remove(note_to_start)
-            return find_node_by_type_recusivly(material, current_node, node_type, del_nodes_inbetween)
+            return get_node_by_type_recusivly(material, current_node, node_type, del_nodes_inbetween)
 
-def find_node_by_name_recusivly(node, idname):
+def get_node_by_name_recusivly(node, idname):
     if node.bl_idname == idname:
         return node
 
     for input in node.inputs:
         for link in input.links:
             current_node = link.from_node
-            return find_node_by_name_recusivly(current_node, idname)
+            return get_node_by_name_recusivly(current_node, idname)
 
 def make_link(material, socket1, socket2):
     links = material.node_tree.links
@@ -206,8 +182,7 @@ def remove_gamma_node(material, pbrInput):
 
 def emission_setup(material, node_output):
     nodes = material.node_tree.nodes
-    emission_node = add_node(
-        material, Shader_Node_Types.emission, "Emission Bake")
+    emission_node = add_node(material, constants.Shader_Node_Types.emission, "Emission Bake")
 
     # link emission to whatever goes into current pbrInput
     emission_input = emission_node.inputs[0]
@@ -226,7 +201,7 @@ def link_pbr_to_output(material, pbr_node):
 def reconnect_PBR(material, pbrNode):
     nodes = material.node_tree.nodes
     pbr_output = pbrNode.outputs[0]
-    surface_input = nodes.get("Material Output").inputs[0]
+    surface_input = get_node_by_type(nodes,constants.Node_Types.material_output)[0].inputs[0]
     make_link(material, pbr_output, surface_input)
 
 def mute_all_texture_mappings(material, do_mute):

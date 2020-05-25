@@ -46,7 +46,7 @@ class GTT_TEX_UL_List(bpy.types.UIList):
         else:
             for mat in all_materials:
                 nodes = mat.node_tree.nodes
-                tex_nodes = node_functions.find_node_by_type(nodes,constants.Node_Types.image_texture)
+                tex_nodes = node_functions.get_node_by_type(nodes,constants.Node_Types.image_texture)
                 [images.append(node.image.name) for node in tex_nodes]
 
         flt_flags = [self.bitflag_filter_item if name in images else 0 for name in all_image_names]

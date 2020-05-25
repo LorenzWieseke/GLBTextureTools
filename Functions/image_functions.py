@@ -16,7 +16,7 @@ def get_all_images_in_selected_objects(selected_objects):
     
     for mat in all_materials:
             nodes = mat.node_tree.nodes
-            tex_nodes = node_functions.find_node_by_type(nodes,constants.Node_Types.image_texture)
+            tex_nodes = node_functions.get_node_by_type(nodes,constants.Node_Types.image_texture)
             [images.append(node.image) for node in tex_nodes]
     
     return images

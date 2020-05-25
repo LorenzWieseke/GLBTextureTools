@@ -42,6 +42,6 @@ def preview_bake_texture(self, context):
             if toggle_lightmap_texture:
                 node_functions.emission_setup(mat, bake_texture_node.outputs["Color"])
             else:
-                pbr_node = node_functions.find_node_by_type(nodes, constants.Node_Types.pbr_node)[0]
+                pbr_node = node_functions.get_node_by_type(nodes, constants.Node_Types.pbr_node)[0]
                 node_functions.remove_node(mat, "Emission Bake")
                 node_functions.reconnect_PBR(mat, pbr_node)

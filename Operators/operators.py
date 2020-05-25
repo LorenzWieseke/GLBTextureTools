@@ -5,6 +5,7 @@ import bpy
 
 from .. Functions import node_functions
 from .. Functions import image_functions
+from .. Functions import object_functions
 from .. Bake import bake_utilities
 from .. Bake import bake_manager
 from .. Functions import constants
@@ -79,14 +80,14 @@ class GTT_GetMaterialByTextureOperator(bpy.types.Operator):
         for mat in materials:
             nodes = mat.node_tree.nodes
             tex_node_type = constants.Node_Types.image_texture
-            tex_nodes = node_functions.find_node_by_type(nodes,tex_node_type)
+            tex_nodes = node_functions.get_node_by_type(nodes,tex_node_type)
             
             # if texture node in current node tree
             if len(tex_nodes) > 0:
                 images = [node.image for node in tex_nodes]
                 if sel_image_texture in images:
                     materials_found.append(mat.name)
-                    node_functions.select_obj_by_mat(self,mat)
+                    object_functions.select_obj_by_mat(self,mat)
                     
 
         return {"FINISHED"}
@@ -391,9 +392,6 @@ class GTT_CleanMaterialsOperator(bpy.types.Operator):
             if not material.users:
                 bpy.data.materials.remove(material)
 
-        # for obj in bpy.data.objects:
-        #     node_functions.select_object(self,obj)
-        #     bpy.ops.object.material_slot_remove_unused()
         return {'FINISHED'}
 
 # ----------------------- FILE OPERATORS--------------------#

@@ -4,6 +4,7 @@ class Node_Types:
     mapping = 'MAPPING'
     normal_map = 'NORMAL_MAP'
     bump_map = 'BUMP'
+    material_output = 'OUTPUT_MATERIAL'
 
 class Shader_Node_Types:
     emission = "ShaderNodeEmission"

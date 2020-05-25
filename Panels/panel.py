@@ -1,6 +1,7 @@
 import bpy
 import os
 from . import panel_ui_list
+
               
 class GTT_ResolutionPanel(bpy.types.Panel):
     bl_idname = "RESOLTUION_PT_scale_image_panel"
@@ -88,11 +89,8 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
         row.prop(scene.bake_settings, 'open_object_bake_list_menu', text="Object Bake List", icon = 'TRIA_DOWN' if bake_settings.open_object_bake_list_menu else 'TRIA_RIGHT' )
         
         # BAKE LIST
-        # if bake_settings.open_object_bake_list_menu:
-        #     box = layout.box()        
-        #     row = box.row()
-
-            # layout.template_list("BAKE_IMAGE_UL_List", "", data, "objects", scene.bake_settings, "bake_object_index")       
+        if bake_settings.open_object_bake_list_menu:
+            layout.template_list("GTT_BAKE_IMAGE_UL_List", "", data, "objects", scene.bake_settings, "bake_object_index")       
 
 
         row = layout.row(align=True)
@@ -109,8 +107,7 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
         col.separator()
         row = col.row(align=True)
         row.prop(scene.texture_settings,"toggle_lightmap_texture", text="Show Material" if scene.texture_settings.toggle_lightmap_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.toggle_lightmap_texture else "NODE_MATERIAL")
-        row.prop(scene.texture_settings,"toggle_lightmap_ao", text="Show Material" if scene.texture_settings.toggle_lightmap_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.toggle_lightmap_texture else "NODE_MATERIAL")
-
+    
 
 def headline(layout,*valueList):
     box = layout.box()
@@ -167,8 +164,6 @@ class GTT_TextureSelectionPanel(bpy.types.Panel):
                     col.label(text=mat)
             else:
                 col.label(text="Texture not used")
-
-
         # Scale and Clean
         layout.operator("image.scale_image",text="Scale Image",icon= 'FULLSCREEN_EXIT')
   

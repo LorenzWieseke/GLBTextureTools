@@ -53,7 +53,7 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
 
     lightmap: BoolProperty(default = False,update=gui_functions.update_lightmap_button)
     lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
-    # lightmap_list = []
+
     lightmap_bakes: EnumProperty(name='Baked Textures',description='List of all the Baked Textures',items=gui_functions.update_bakes_list)
    
     bake_image_name: StringProperty(default="Lightmap")
@@ -82,7 +82,6 @@ class GTT_Texture_Settings(bpy.types.PropertyGroup):
     operate_on_all_textures:BoolProperty(default=False)
 
     toggle_lightmap_texture:BoolProperty(default=False,update=visibility_functions.preview_bake_texture)
-    toggle_ao_texture:BoolProperty(default=False,update=visibility_functions.preview_bake_texture)
     texture_index:IntProperty(name = "Index for Texture List", default = 0, update=visibility_functions.show_selected_image_in_image_editor)
 
 bpy.utils.register_class(GTT_Texture_Settings)

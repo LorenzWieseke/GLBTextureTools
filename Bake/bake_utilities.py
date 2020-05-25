@@ -64,8 +64,6 @@ class BakeUtilities():
                 device = 'CPU'
                 print("GPU not Supported, leaving at CPU")
 
-
-
     def unwrap_selected(self):
         if self.bake_settings.unwrap:
             self.O.object.add_uv(uv_name=self.bake_settings.uv_name)
@@ -118,7 +116,7 @@ class BakeUtilities():
     def save_metal_value(self):
         for material in self.all_materials:
             nodes = material.node_tree.nodes
-            pbr_node = node_functions.find_node_by_type(nodes, constants.Node_Types.pbr_node)[0]
+            pbr_node = node_functions.get_node_by_type(nodes, constants.Node_Types.pbr_node)[0]
             
             # save metal value
             metallic_value = pbr_node.inputs["Metallic"].default_value
@@ -128,7 +126,7 @@ class BakeUtilities():
     def load_metal_value(self):
         for material in self.all_materials:
             nodes = material.node_tree.nodes
-            pbr_node = node_functions.find_node_by_type(nodes,constants.Node_Types.pbr_node)[0]   
+            pbr_node = node_functions.get_node_by_type(nodes,constants.Node_Types.pbr_node)[0]   
             pbr_node.inputs["Metallic"].default_value = pbr_node["original_metallic"]
 
     def add_uv_node(self,material):
@@ -140,7 +138,7 @@ class BakeUtilities():
     def position_gltf_setup_nodes(self,material,uv_node,image_texture_node,gltf_settings_node):
         nodes = material.node_tree.nodes
         # uv node
-        pbr_node = node_functions.find_node_by_type(nodes,constants.Node_Types.pbr_node)[0]   
+        pbr_node = node_functions.get_node_by_type(nodes,constants.Node_Types.pbr_node)[0]   
         posOffset = mathutils.Vector((-900, 400))
         loc = pbr_node.location + posOffset
         uv_node.location = loc
@@ -179,7 +177,7 @@ class BakeUtilities():
                 uv_node.location = mathutils.Vector((-700, 200))
 
                 # linking
-                pbr_node = node_functions.find_node_by_type(material.node_tree.nodes, constants.Node_Types.pbr_node)[0]
+                pbr_node = node_functions.get_node_by_type(material.node_tree.nodes, constants.Node_Types.pbr_node)[0]
                 node_functions.make_link(material, image_texture_node.outputs['Color'], pbr_node.inputs['Emission'])
                 node_functions.make_link(material, uv_node.outputs["UV"],image_texture_node.inputs['Vector'])        
 
@@ -291,7 +289,7 @@ class PbrBakeUtilities(BakeUtilities):
     def bake_pbr(self):
         material = self.active_material
         nodes = material.node_tree.nodes
-        pbr_node = node_functions.find_node_by_type(nodes,constants.Node_Types.pbr_node)[0]        
+        pbr_node = node_functions.get_node_by_type(nodes,constants.Node_Types.pbr_node)[0]        
         pbr_inputs = node_functions.get_pbr_inputs(pbr_node)
         image_texture_node = None
 
@@ -370,7 +368,7 @@ class PbrBakeUtilities(BakeUtilities):
 
         # -----------------------SETUP VARS--------------------#
         nodes = bake_material.node_tree.nodes
-        pbr_node = node_functions.find_node_by_type(nodes,constants.Node_Types.pbr_node)[0]        
+        pbr_node = node_functions.get_node_by_type(nodes,constants.Node_Types.pbr_node)[0]        
         pbr_inputs = node_functions.get_pbr_inputs(pbr_node)
 
         for pbr_input in pbr_inputs.values():
@@ -380,7 +378,7 @@ class PbrBakeUtilities(BakeUtilities):
 
             # -----------------------REPLACE IMAGE TEXTURES--------------------#
             first_node_after_input = pbr_input.links[0].from_node
-            tex_node = node_functions.find_node_by_type_recusivly(bake_material,first_node_after_input,constants.Node_Types.image_texture,True)
+            tex_node = node_functions.get_node_by_type_recusivly(bake_material,first_node_after_input,constants.Node_Types.image_texture,True)
 
             bake_image_name = org_material.name + "_" + pbr_input.name
             bake_image = self.D.images.get(bake_image_name)
