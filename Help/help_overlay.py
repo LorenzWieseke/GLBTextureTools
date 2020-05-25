@@ -113,7 +113,7 @@ class GTT_Help_Operator(bpy.types.Operator):
     bl_description = "Description that shows in blender tooltips"
     bl_options = {"REGISTER"}
 
-    image_path = "help_overlay_texture_tools.png"
+    image_path = "help_overlay_texture_tools_2.png"
     help_draw = None
 
     @classmethod
