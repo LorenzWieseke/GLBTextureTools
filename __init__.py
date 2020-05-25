@@ -22,7 +22,7 @@ bl_info = {
     "category": "Generic"
 }
 
-from . import Functions, Panels, Properties, Operators, Bake
+from . import Functions, Panels, Properties, Operators, Bake,Help
 
 def register():
     Functions.register()
@@ -30,6 +30,7 @@ def register():
     Properties.register()
     Operators.register()
     Bake.register()
+    Help.register()
 
 
 def unregister():
@@ -38,6 +39,7 @@ def unregister():
     Properties.unregister()
     Operators.unregister()
     Bake.unregister()
+    Help.unregister()
     
 
 # from . import auto_load

@@ -107,7 +107,7 @@ class Help_Draw():
         return False    
 
 
-class Help_Operator(bpy.types.Operator):
+class GTT_Help_Operator(bpy.types.Operator):
     bl_idname = "scene.help"
     bl_label = "Help"
     bl_description = "Description that shows in blender tooltips"
