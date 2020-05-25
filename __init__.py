@@ -15,8 +15,8 @@ bl_info = {
     "name": "GLBTextureTools",
     "author": "Lorenz Wieseke",
     "description": "",
-    "blender": (2, 80, 1),
-    "version": (0,0,2),
+    "blender": (2, 82, 1),
+    "version": (0,0,3),
     "location": "",
     "warning": "",
     "category": "Generic"
