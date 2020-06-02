@@ -57,36 +57,41 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
             row.prop(scene.bake_settings, 'lightmap',  text="Lightmap",toggle = True)
             row.prop(scene.bake_settings, 'lightmap_samples',  text="Samples")
             
-            if bake_settings.pbr_nodes:
-                col.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
-                col.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
 
             row = box.row()
             row.prop(scene.bake_settings, 'bake_image_name',  text="")
-            row = box.row()
-            row.prop(scene.bake_settings, 'lightmap_bakes',text="") 
-            row.operator("object.select_lightmap_objects",text="",icon="RESTRICT_SELECT_OFF")
 
-            if bake_settings.lightmap:
-                box.prop(scene.world.node_tree.nodes["Background"].inputs[1],'default_value',text="World Influence")
+            if bake_settings.pbr_nodes:
+                row = box.row()
+                # col = row.collumn()
+                row.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
+                row.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
 
-            if bake_settings.ao_map:
-                box.prop(scene.world.light_settings,"distance",text="AO Distance")
+            if bake_settings.lightmap or bake_settings.ao_map:
+                row = box.row()
+                row.prop(scene.bake_settings, 'lightmap_bakes',text="") 
+                row.operator("object.select_lightmap_objects",text="",icon="RESTRICT_SELECT_OFF")
+
+                if bake_settings.lightmap:
+                    box.prop(scene.world.node_tree.nodes["Background"].inputs[1],'default_value',text="World Influence")
+
+                if bake_settings.ao_map:
+                    box.prop(scene.world.light_settings,"distance",text="AO Distance")
                 
-            box.prop(scene.bake_settings, 'unwrap_margin', text="UV Margin")
-            box.prop(scene.bake_settings, 'bake_margin', text="Bake Margin")
-            
-            split = box.split()
-            col = split.column(align=True)
-            col.prop(scene.bake_settings, 'unwrap', text="Unwrap")
-            col.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
+                box.prop(scene.bake_settings, 'unwrap_margin', text="UV Margin")
+                box.prop(scene.bake_settings, 'bake_margin', text="Bake Margin")
+                
+                split = box.split()
+                col = split.column(align=True)
+                col.prop(scene.bake_settings, 'unwrap', text="Unwrap")
+                col.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
 
-            col = split.column(align=True)
-            col.prop(scene.bake_settings, 'denoise', text="Denoise")
-            col.prop(scene.bake_settings, 'show_texture_after_bake', text="Show Texture after Bake")
+                col = split.column(align=True)
+                col.prop(scene.bake_settings, 'denoise', text="Denoise")
+                col.prop(scene.bake_settings, 'show_texture_after_bake', text="Show Texture after Bake")
             
         row = layout.row()
-        row.prop(scene.bake_settings, 'open_object_bake_list_menu', text="Object Bake List", icon = 'TRIA_DOWN' if bake_settings.open_object_bake_list_menu else 'TRIA_RIGHT' )
+        row.prop(scene.bake_settings, 'open_object_bake_list_menu', text="Lightmapped Objects", icon = 'TRIA_DOWN' if bake_settings.open_object_bake_list_menu else 'TRIA_RIGHT' )
         
         # BAKE LIST
         if bake_settings.open_object_bake_list_menu:
