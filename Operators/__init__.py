@@ -3,7 +3,6 @@ from . import operators
 
 classes = [
     operators.GTT_AddUVOperator,
-    operators.GTT_CleanBakesOperator,
     operators.GTT_CleanMaterialsOperator,
     operators.GTT_CleanTexturesOperator,
     operators.GTT_GetMaterialByTextureOperator,

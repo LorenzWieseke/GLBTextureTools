@@ -21,7 +21,6 @@ def get_all_images_in_selected_objects(selected_objects):
     
     return images
 
-
 def save_image(image):
 
     filePath = bpy.data.filepath

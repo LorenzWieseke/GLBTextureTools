@@ -1,5 +1,4 @@
 {
-    "python.pythonPath": "c:/Users/wiese/AppData/Local/Programs/Python/Python38-32/python.exe",
     "python.autoComplete.addBrackets": true,
     "blender.addon.reloadOnSave": true,
     "python.linting.pylintEnabled": true,

@@ -19,20 +19,21 @@ class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        # if len(context.scene.bake_settings.lightmap_list) > 0:
-        #     return True
-        # return False
+        if context.scene.bake_settings.lightmap_bakes == '':
+            return False
         return True
 
     def execute(self, context):
 
         C = context
         D = bpy.data
+        O = bpy.ops
 
         bake_settings = C.scene.bake_settings
         objects = D.objects
         bake_settings.bake_image_name = bake_settings.lightmap_bakes
 
+        O.object.select_all(action='DESELECT')
         for obj in objects:
             if obj.bake_texture_name == bake_settings.lightmap_bakes:
                 obj.select_set(True)
@@ -91,17 +92,6 @@ class GTT_GetMaterialByTextureOperator(bpy.types.Operator):
                     
 
         return {"FINISHED"}
-
-
-class GTT_CleanBakesOperator(bpy.types.Operator):
-    bl_idname = "image.clean_bakes"
-    bl_label = "CleanTextures"
-
-    def execute(self, context):
-        for image in bpy.data.images:
-            if not image.users or list(image.size) == [0,0]:
-                bpy.data.images.remove(image)
-        return {'FINISHED'}
 
 class GTT_ScaleImageOperator(bpy.types.Operator):
     """Scale all Images on selected Material to specific resolution"""
@@ -365,10 +355,6 @@ class GTT_RemoveAOOperator(bpy.types.Operator):
             node_functions.remove_node(mat,bake_settings.texture_node_ao)
             node_functions.remove_node(mat,"Second_UV")
             node_functions.remove_node(mat,"glTF Settings")
-
-        #remove ligtmap flag
-        for obj in selected_objects:
-            obj.has_lightmap = False
             
         return {'FINISHED'}
 

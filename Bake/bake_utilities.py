@@ -4,6 +4,7 @@ from .. Functions import node_functions
 from .. Functions import image_functions
 from .. Functions import constants
 from .. Functions import visibility_functions
+from .. Functions import object_functions
 
 class BakeUtilities():
     C = bpy.context
@@ -67,7 +68,33 @@ class BakeUtilities():
     def unwrap_selected(self):
         if self.bake_settings.unwrap:
             self.O.object.add_uv(uv_name=self.bake_settings.uv_name)
-            self.O.object.transform_apply(location=False, rotation=False, scale=True)
+
+            # apply scale on linked
+            sel_objects = self.C.selected_objects
+            scene_objects = self.D.objects
+            linked_objects = set()
+
+            for sel_obj in sel_objects:
+                for scene_obj in scene_objects:
+                    if sel_obj.data.original is scene_obj.data and sel_obj is not scene_obj:
+                        linked_objects.add(sel_obj)
+            
+            # self.O.object.select_all(action='DESELECT')
+            # for linked_obj in linked_objects:
+            #     linked_obj.select_set(True)
+
+            # object_functions.apply_transform_on_linked()
+
+            # self.O.object.select_all(action='DESELECT')
+            # for sel_obj in sel_objects:
+            #     if sel_obj not in linked_objects:
+            #         sel_obj.select_set(True)
+
+            # do not apply transform if linked objects in selection
+            if not len(linked_objects)>0:
+                bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
+
             self.O.object.mode_set(mode='EDIT')
             self.O.mesh.select_all(action='SELECT')
             self.O.uv.smart_project(island_margin=self.bake_settings.unwrap_margin)

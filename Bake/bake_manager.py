@@ -24,11 +24,11 @@ def bake_texture(self, selected_objects, bake_settings):
         ligthmap_utilities.save_metal_value()
         ligthmap_utilities.bake(constants.Bake_Types.lightmap)
         ligthmap_utilities.load_metal_value()
+        ligthmap_utilities.add_lightmap_flag()
     
     if bake_settings.ao_map:
         ligthmap_utilities.bake(constants.Bake_Types.ao)
 
-    ligthmap_utilities.add_lightmap_flag()
     ligthmap_utilities.cleanup()
 
 
