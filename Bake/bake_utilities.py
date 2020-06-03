@@ -238,8 +238,8 @@ class BakeUtilities():
     def bake_and_save_image(self, image, channel):
 
         if channel == "NOISY":
-            self.O.object.bake(type="DIFFUSE", pass_filter={'COLOR', 'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-        
+            self.O.object.bake(type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+            
         if channel == "AO":
             self.O.object.bake(type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
         

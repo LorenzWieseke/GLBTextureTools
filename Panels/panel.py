@@ -1,6 +1,7 @@
 import bpy
 import os
 from . import panel_ui_list
+# from .. Update import addon_updater_ops
 
               
 class GTT_ResolutionPanel(bpy.types.Panel):
@@ -58,9 +59,6 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
             row.prop(scene.bake_settings, 'lightmap_samples',  text="Samples")
             
 
-            row = box.row()
-            row.prop(scene.bake_settings, 'bake_image_name',  text="")
-
             if bake_settings.pbr_nodes:
                 row = box.row()
                 # col = row.collumn()
@@ -68,6 +66,9 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
                 row.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
 
             if bake_settings.lightmap or bake_settings.ao_map:
+
+                row = box.row()
+                row.prop(scene.bake_settings, 'bake_image_name',  text="")
                 row = box.row()
                 row.prop(scene.bake_settings, 'lightmap_bakes',text="") 
                 row.operator("object.select_lightmap_objects",text="",icon="RESTRICT_SELECT_OFF")
@@ -228,6 +229,14 @@ class GTT_HelpPanel(bpy.types.Panel):
     def draw(self, context):
         scene = context.scene
         layout = self.layout
+
+        # addon_updater_ops.check_for_update_background()
+
+        # if addon_updater_ops.updater.update_ready == True:
+        #     layout.label(text="New version is out", icon="INFO")
+
+		# # call built-in function with draw code/checks
+        # addon_updater_ops.update_notice_box_ui(self, context)
         
         layout.prop(scene,"help_tex_tools",text="Help",icon = 'HELP')
 

@@ -30,6 +30,9 @@ def preview_bake_texture(self, context):
     bake_settings = context.scene.bake_settings
     toggle_lightmap_texture = context.scene.texture_settings.toggle_lightmap_texture
     for mat in all_materials:
+        if not mat.node_tree:
+            continue
+
         nodes = mat.node_tree.nodes
 
         if bake_settings.lightmap:

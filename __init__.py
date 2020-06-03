@@ -16,15 +16,18 @@ bl_info = {
     "author": "Lorenz Wieseke",
     "description": "",
     "blender": (2, 82, 1),
-    "version": (0,0,4),
+    "version": (0,0,7),
     "location": "",
     "warning": "",
+    "wiki_url":    "https://docs.google.com/document/d/1w1h3ySyZG4taG01RbbDsPODsUP06cRCggxQKCt32QTk",
+	"tracker_url": "https://github.com/LorenzWieseke/GLBTextureTools/issues",
     "category": "Generic"
 }
 
-from . import Functions, Panels, Properties, Operators, Bake,Help
+from . import Functions, Panels, Properties, Operators, Bake, Help, Update
 
-def register():
+def register():    
+    Update.register(bl_info)
     Functions.register()
     Panels.register()
     Properties.register()
@@ -34,13 +37,14 @@ def register():
 
 
 def unregister():
+    Update.unregister()
     Functions.unregister()
     Panels.unregister()
     Properties.unregister()
     Operators.unregister()
     Bake.unregister()
     Help.unregister()
-    
+
 
 # from . import auto_load
 
