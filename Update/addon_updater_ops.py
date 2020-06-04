@@ -93,9 +93,9 @@ def get_user_preferences(context=None):
 		context = bpy.context
 	prefs = None
 	if hasattr(context, "user_preferences"):
-		prefs = context.user_preferences.addons.get("GLBTextureTools", None)
+		prefs = context.user_preferences.addons.get(__package__.split(".")[0], None)
 	elif hasattr(context, "preferences"):
-		prefs = context.preferences.addons.get("GLBTextureTools", None)
+		prefs = context.preferences.addons.get(__package__.split(".")[0], None)
 	if prefs:
 		return prefs.preferences
 	# To make the addon stable and non-exception prone, return None
@@ -234,7 +234,7 @@ class addon_updater_check_now(bpy.types.Operator):
 		if not settings:
 			if updater.verbose:
 				print("Could not get {} preferences, update check skipped".format(
-					"GLBTextureTools"))
+					__package__.split(".")[0]))
 			return {'CANCELLED'}
 		updater.set_check_interval(enable=settings.auto_check_update,
 					months=settings.updater_intrval_months,
@@ -799,7 +799,7 @@ def check_for_update_nonthreaded(self, context):
 	if not settings:
 		if updater.verbose:
 			print("Could not get {} preferences, update check skipped".format(
-				"GLBTextureTools"))
+				__package__.split(".")[0]))
 		return
 	updater.set_check_interval(enable=settings.auto_check_update,
 				months=settings.updater_intrval_months,
@@ -1364,8 +1364,8 @@ def register(bl_info):
 	# Needs to be within the same folder as the addon itself
 	# Need to supply a full, absolute path to folder
 	# updater.updater_path = # set path of updater folder, by default:
-	#			/addons/{"GLBTextureTools"}/{"GLBTextureTools"}_updater
-	updater._updater_path = "/Update/"
+	#			/addons/{__package__.split(".")[0]}/{__package__.split(".")[0]}_updater
+	# updater._updater_path = ""
 
 	# auto create a backup of the addon when installing other versions
 	updater.backup_current = True # True by default

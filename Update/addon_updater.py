@@ -112,8 +112,8 @@ class Singleton_updater(object):
 		self.skip_tag = None
 
 		# get from module data
-		self._addon = "GLBTextureTools".lower()
-		self._addon_package = "GLBTextureTools"  # must not change
+		self._addon = __package__.split(".")[0].lower()
+		self._addon_package = __package__.split(".")[0]  # must not change
 		self._updater_path = os.path.join(os.path.dirname(__file__),
 										self._addon+"_updater")
 		self._addon_root = os.path.dirname(__file__)

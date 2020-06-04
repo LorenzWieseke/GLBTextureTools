@@ -27,23 +27,23 @@ bl_info = {
 from . import Functions, Panels, Properties, Operators, Bake, Help, Update
 
 def register():    
+    Update.register(bl_info)
     Functions.register()
     Panels.register()
     Properties.register()
     Operators.register()
     Bake.register()
     Help.register()
-    Update.register(bl_info)
 
 
 def unregister():
+    Update.unregister()
     Functions.unregister()
     Panels.unregister()
     Properties.unregister()
     Operators.unregister()
     Bake.unregister()
     Help.unregister()
-    Update.unregister()
 
 
 # from . import auto_load

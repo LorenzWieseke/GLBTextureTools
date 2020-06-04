@@ -5,7 +5,7 @@ from . import addon_updater_ops
 class GTT_Preferences(bpy.types.AddonPreferences):
 	"""Demo bare-bones preferences"""
 	bl_idname = 'GLBTextureTools'
-	# bl_idname = "GLBTextureTools" 
+	# bl_idname = __package__.split(".")[0] 
 	# addon updater preferences
 
 	auto_check_update = bpy.props.BoolProperty(
