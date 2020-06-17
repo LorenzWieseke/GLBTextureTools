@@ -22,7 +22,7 @@ def update_bakes_list(bake_settings, context):
 
     # bake_textures_set = bake_settings.lightmap_list
     for obj in bpy.data.objects:
-        if obj.bake_texture_name:
-            bake_textures_set.add((obj.bake_texture_name, obj.bake_texture_name, "Baked Texture Name"))
+        if obj.ligthmap_name:
+            bake_textures_set.add((obj.ligthmap_name, obj.ligthmap_name, "Baked Texture Name"))
 
     return list(bake_textures_set)

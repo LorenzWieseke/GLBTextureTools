@@ -16,7 +16,7 @@ bl_info = {
     "author": "Lorenz Wieseke",
     "description": "",
     "blender": (2, 82, 1),
-    "version": (0,0,7),
+    "version": (0,0,5),
     "location": "",
     "warning": "",
     "wiki_url":    "https://docs.google.com/document/d/1w1h3ySyZG4taG01RbbDsPODsUP06cRCggxQKCt32QTk",
@@ -24,10 +24,9 @@ bl_info = {
     "category": "Generic"
 }
 
-from . import Functions, Panels, Properties, Operators, Bake, Help, Update
+from . import Functions, Panels, Properties, Operators, Bake, Help
 
 def register():    
-    Update.register(bl_info)
     Functions.register()
     Panels.register()
     Properties.register()
@@ -37,7 +36,6 @@ def register():
 
 
 def unregister():
-    Update.unregister()
     Functions.unregister()
     Panels.unregister()
     Properties.unregister()

@@ -35,7 +35,7 @@ class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
 
         O.object.select_all(action='DESELECT')
         for obj in objects:
-            if obj.bake_texture_name == bake_settings.lightmap_bakes:
+            if obj.ligthmap_name == bake_settings.lightmap_bakes:
                 obj.select_set(True)
 
         return {'FINISHED'}
@@ -181,7 +181,7 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
                 texture_settings.toggle_lightmap_texture = True
                         
             for obj in selected_objects:
-                obj.bake_texture_name = bake_settings.bake_image_name
+                obj.ligthmap_name = bake_settings.bake_image_name
 
         # ----------------------- PBR Texture --------------------#
         if bake_settings.pbr_nodes:

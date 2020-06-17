@@ -3,6 +3,7 @@ from bpy.props import *
 from .. Functions import gui_functions
 from .. Functions import visibility_functions
 
+
 bpy.types.Scene.img_bake_size = EnumProperty(
     name='Size',
     description='Set Resolution for Baking',
@@ -99,5 +100,6 @@ bpy.types.Image.org_image_name = StringProperty()
 
 # OBJECT PROPERTIES
 bpy.types.Object.has_lightmap = BoolProperty()
-bpy.types.Object.bake_texture_name = StringProperty()
+bpy.types.Object.ligthmap_name = StringProperty()
+bpy.types.Object.ao_map_name = StringProperty()
 
