@@ -150,11 +150,23 @@ class BakeUtilities():
             pbr_node["original_metallic"] = metallic_value
             pbr_node.inputs["Metallic"].default_value = 0
 
+            # save metal image
+            if pbr_node.inputs["Metallic"].is_linked:
+                # get metal image node, save it in pbr node and remove connection
+                metal_image_node = pbr_node.inputs["Metallic"].links[0].from_node
+                self.metal_image_node = metal_image_node
+                node_functions.remove_link(material,metal_image_node.outputs[0],pbr_node.inputs["Metallic"])
+
     def load_metal_value(self):
         for material in self.all_materials:
             nodes = material.node_tree.nodes
             pbr_node = node_functions.get_node_by_type(nodes,constants.Node_Types.pbr_node)[0]   
             pbr_node.inputs["Metallic"].default_value = pbr_node["original_metallic"]
+
+            # reconnect metal image
+            if hasattr(self,"metal_image_node"):
+                node_functions.make_link(material,self.metal_image_node.outputs[0],pbr_node.inputs["Metallic"])
+            
 
     def add_uv_node(self,material):
 
