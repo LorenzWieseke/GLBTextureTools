@@ -24,33 +24,19 @@ bl_info = {
     "category": "Generic"
 }
 
-from . import Functions, Panels, Properties, Operators, Bake, Help
+import bpy
+from .Functions import object_functions
 
-def register():    
-    Functions.register()
-    Panels.register()
-    Properties.register()
-    Operators.register()
-    Bake.register()
-    Help.register()
+from . import auto_load
+
+auto_load.init()
+classes = auto_load.get_classes()
+
+def register():
+    auto_load.register()
+    bpy.app.handlers.depsgraph_update_post.clear()
+    bpy.app.handlers.depsgraph_update_post.append(object_functions.update_one_selection)
 
 
 def unregister():
-    Functions.unregister()
-    Panels.unregister()
-    Properties.unregister()
-    Operators.unregister()
-    Bake.unregister()
-    Help.unregister()
-
-
-# from . import auto_load
-
-# auto_load.init()
-# classes = auto_load.get_classes()
-
-# def register():
-#     auto_load.register()
-
-# def unregister():
-#     auto_load.unregister()
+    auto_load.unregister()
