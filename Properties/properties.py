@@ -80,6 +80,7 @@ class GTT_Texture_Settings(bpy.types.PropertyGroup):
     open_texture_settings_menu:BoolProperty(default=False)
     open_sel_mat_menu:BoolProperty(default=False)
     show_all_textures:BoolProperty(default=False)
+    show_per_material:BoolProperty(default=False)
     operate_on_all_textures:BoolProperty(default=False)
 
     toggle_lightmap_texture:BoolProperty(default=False,update=visibility_functions.preview_bake_texture)

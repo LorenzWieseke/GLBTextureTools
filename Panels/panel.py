@@ -152,6 +152,7 @@ class GTT_TextureSelectionPanel(bpy.types.Panel):
             box = layout.box()                
               
             box.prop(scene.texture_settings, 'show_all_textures', text="Show all Textures")
+            box.prop(scene.texture_settings, 'show_per_material', text="Show Textures per Material")
             box.prop(scene.texture_settings, 'operate_on_all_textures', text="Operate on all Textures")    
                       
             layout.operator("file.unpack_all",text="Unpack")
