@@ -14,6 +14,8 @@ class Shader_Node_Types:
     ao = "ShaderNodeAmbientOcclusion"
     uv = "ShaderNodeUVMap"
     comp_image_node = 'CompositorNodeImage'
+    mix ="ShaderNodeMixRGB"
+
 
 class Bake_Types:
     pbr = ["EMISSION"]

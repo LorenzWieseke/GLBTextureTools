@@ -1,7 +1,7 @@
 import os
 import subprocess
 import bpy
-# from bpy.props import *
+import mathutils
 
 from .. Functions import node_functions
 from .. Functions import image_functions
@@ -245,6 +245,99 @@ class GTT_SwitchOrgMaterialOperator(bpy.types.Operator):
                 slot.material = mat_org
 
         return {'FINISHED'}
+
+class GTT_LightmapEmissionOperator(bpy.types.Operator):
+    """Connect baked Lightmap to Emission input of Principled Shader"""
+    bl_idname = "object.ligthmap_to_emission"
+    bl_label = "Lightmap to Emission"
+
+    @classmethod
+    def poll(cls, context):
+        return (context.object.has_lightmap)
+
+    def execute(self, context):
+
+        active_obj = context.object
+        active_mat = context.object.active_material
+
+        for slot in active_obj.material_slots:
+            material = slot.material
+            nodes = material.node_tree.nodes
+
+            pbr_node = node_functions.get_pbr_node(material)
+            lightmap_node = nodes.get("Lightmap")
+
+            emission_input = node_functions.get_pbr_inputs(pbr_node)["emission_input"]
+            lightmap_output = lightmap_node.outputs["Color"]
+
+            node_functions.make_link(material, lightmap_output, emission_input)
+
+            # remove mix node
+            mix_node = nodes.get("Mulitply Lightmap")
+            if mix_node is not None:
+                for area in context.screen.areas:
+                    if area.type == 'NODE_EDITOR':
+                        override = {'area': area}
+                        bpy.ops.node.select_all(override,action='DESELECT')
+                        mix_node.select = True
+                        bpy.ops.node.delete_reconnect(override)
+
+        return {'FINISHED'}
+
+class GTT_LightmapBaseColorOperator(bpy.types.Operator):
+    """Connect baked Lightmap to Base Color input of Principled Shader"""
+    bl_idname = "object.ligthmap_to_base_color"
+    bl_label = "Lightmap to Base Color"
+
+    @classmethod
+    def poll(cls, context):
+        return (context.object.has_lightmap)
+
+    def execute(self, context):
+
+        active_obj = context.object
+        active_mat = context.object.active_material
+
+        for slot in active_obj.material_slots:
+            material = slot.material
+            nodes = material.node_tree.nodes
+
+            pbr_node = node_functions.get_pbr_node(material)
+            base_color_input = node_functions.get_pbr_inputs(pbr_node)["base_color_input"]
+            emission_input = node_functions.get_pbr_inputs(pbr_node)["emission_input"]
+
+            lightmap_node = nodes.get("Lightmap")
+            lightmap_output = lightmap_node.outputs["Color"]
+
+            # add mix node
+            mix_node_name = "Mulitply Lightmap"
+            mix_node = node_functions.add_node(material,constants.Shader_Node_Types.mix, mix_node_name)
+            mix_node.blend_type = 'MULTIPLY'
+            mix_node.inputs[0].default_value = 1 # set factor to 1
+            pos_offset = mathutils.Vector((-200, 200))
+            mix_node.location = pbr_node.location + pos_offset
+
+            mix_node_input1 = mix_node.inputs["Color1"]
+            mix_node_input2 = mix_node.inputs["Color2"]
+            mix_node_output = mix_node.outputs["Color"]
+
+            # image texture in base color
+            if base_color_input.is_linked:
+                node_before_base_color = base_color_input.links[0].from_node
+                if not node_before_base_color.name == mix_node_name:
+                    node_functions.make_link(material, node_before_base_color.outputs["Color"], mix_node_input1)
+                    node_functions.make_link(material, lightmap_output, mix_node_input2)
+                    node_functions.make_link(material, mix_node_output, base_color_input)
+            else :
+                mix_node_input1.default_value = base_color_input.default_value 
+                node_functions.make_link(material, lightmap_output, mix_node_input2)
+                node_functions.make_link(material, mix_node_output, base_color_input)
+
+            node_functions.remove_link(material,lightmap_output,emission_input)
+
+            
+        return {'FINISHED'}
+
 
 # ----------------------- UV OPERATORS--------------------#
 

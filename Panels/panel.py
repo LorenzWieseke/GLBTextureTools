@@ -106,10 +106,13 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
         
         # VISIBILITY
         layout.label(text="Visiblity")
-        col = layout.column(align=True)
-        row = col.row(align=True)
+        col = layout.column()
+        row = col.row()
         row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="PBR Material")
         row.operator("object.switch_bake_mat_operator",icon = 'MATERIAL', text="PBR Baked Material")
+        row = col.row()
+        row.operator("object.ligthmap_to_emission",icon="LIGHT_SUN")
+        row.operator("object.ligthmap_to_base_color",icon="COLORSET_13_VEC")
         col.separator()
         row = col.row(align=True)
         row.prop(scene.texture_settings,"toggle_lightmap_texture", text="Show Material" if scene.texture_settings.toggle_lightmap_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.toggle_lightmap_texture else "NODE_MATERIAL")

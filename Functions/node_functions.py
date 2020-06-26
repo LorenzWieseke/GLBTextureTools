@@ -5,8 +5,6 @@ from .. Functions import constants
 import mathutils
 
 
-
-
 # -----------------------COMPOSITING--------------------#
 def comp_ai_denoise(noisy_image, nrm_image, color_image):
 
@@ -66,13 +64,16 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
         bpy.data.scenes["Scene"].render.image_settings.file_format.lower()
 
     # cleanup
-    comp_nodes = [image_node,nrm_image_node,color_image_node,denoise_node,comp_node]
+    comp_nodes = [image_node, nrm_image_node,
+                  color_image_node, denoise_node, comp_node]
     for node in comp_nodes:
         tree.nodes.remove(node)
 
     return denoised_image_path
 
 # -----------------------CHECKING --------------------#
+
+
 def check_only_one_pbr(self, material):
     check_ok = True
     # get pbr shader
@@ -92,6 +93,7 @@ def check_only_one_pbr(self, material):
 
     return check_ok
 
+
 def check_is_org_material(self, material):
     check_ok = True
     if "_Bake" in material.name:
@@ -99,6 +101,7 @@ def check_is_org_material(self, material):
         check_ok = False
 
     return check_ok
+
 
 def clean_empty_materials(self):
     for obj in bpy.data.objects:
@@ -111,6 +114,8 @@ def clean_empty_materials(self):
                 bpy.ops.object.material_slot_remove()
 
 # -----------------------NODES --------------------#
+
+
 def get_pbr_inputs(pbr_node):
 
     base_color_input = pbr_node.inputs["Base Color"]
@@ -118,14 +123,18 @@ def get_pbr_inputs(pbr_node):
     specular_input = pbr_node.inputs["Specular"]
     roughness_input = pbr_node.inputs["Roughness"]
     normal_input = pbr_node.inputs["Normal"]
+    emission_input = pbr_node.inputs["Emission"]
 
     pbr_inputs = {"base_color_input": base_color_input, "metallic_input": metallic_input,
-                  "specular_input": specular_input, "roughness_input": roughness_input, "normal_input": normal_input}
+                  "specular_input": specular_input, "roughness_input": roughness_input, 
+                  "normal_input": normal_input, "emission_input": emission_input}
     return pbr_inputs
+
 
 def get_node_by_type(nodes, node_type):
     nodes_found = [n for n in nodes if n.type == node_type]
     return nodes_found
+
 
 def get_node_by_type_recusivly(material, note_to_start, node_type, del_nodes_inbetween=False):
     nodes = material.node_tree.nodes
@@ -139,6 +148,7 @@ def get_node_by_type_recusivly(material, note_to_start, node_type, del_nodes_inb
                 nodes.remove(note_to_start)
             return get_node_by_type_recusivly(material, current_node, node_type, del_nodes_inbetween)
 
+
 def get_node_by_name_recusivly(node, idname):
     if node.bl_idname == idname:
         return node
@@ -148,9 +158,16 @@ def get_node_by_name_recusivly(node, idname):
             current_node = link.from_node
             return get_node_by_name_recusivly(current_node, idname)
 
+
+def get_pbr_node(material):
+    nodes = material.node_tree.nodes
+    return get_node_by_type(nodes, constants.Node_Types.pbr_node)[0]
+
+
 def make_link(material, socket1, socket2):
     links = material.node_tree.links
     links.new(socket1, socket2)
+
 
 def remove_link(material, socket1, socket2):
 
@@ -160,6 +177,7 @@ def remove_link(material, socket1, socket2):
     for l in socket1.links:
         if l.to_socket == socket2:
             links.remove(l)
+
 
 def add_in_gamme_node(material, pbrInput):
     nodeToPrincipledOutput = pbrInput.links[0].from_socket
@@ -172,6 +190,7 @@ def add_in_gamme_node(material, pbrInput):
     make_link(material, nodeToPrincipledOutput, gammaNode.inputs["Color"])
     make_link(material, gammaNode.outputs["Color"], pbrInput)
 
+
 def remove_gamma_node(material, pbrInput):
     nodes = material.node_tree.nodes
     gammaNode = nodes.get("Gamma Bake")
@@ -180,9 +199,11 @@ def remove_gamma_node(material, pbrInput):
     make_link(material, nodeToPrincipledOutput, pbrInput)
     material.node_tree.nodes.remove(gammaNode)
 
+
 def emission_setup(material, node_output):
     nodes = material.node_tree.nodes
-    emission_node = add_node(material, constants.Shader_Node_Types.emission, "Emission Bake")
+    emission_node = add_node(
+        material, constants.Shader_Node_Types.emission, "Emission Bake")
 
     # link emission to whatever goes into current pbrInput
     emission_input = emission_node.inputs[0]
@@ -193,22 +214,27 @@ def emission_setup(material, node_output):
     emission_output = emission_node.outputs[0]
     make_link(material, emission_output, surface_input)
 
+
 def link_pbr_to_output(material, pbr_node):
     nodes = material.node_tree.nodes
     surface_input = nodes.get("Material Output").inputs[0]
     make_link(material, pbr_node.outputs[0], surface_input)
 
+
 def reconnect_PBR(material, pbrNode):
     nodes = material.node_tree.nodes
     pbr_output = pbrNode.outputs[0]
-    surface_input = get_node_by_type(nodes,constants.Node_Types.material_output)[0].inputs[0]
+    surface_input = get_node_by_type(
+        nodes, constants.Node_Types.material_output)[0].inputs[0]
     make_link(material, pbr_output, surface_input)
+
 
 def mute_all_texture_mappings(material, do_mute):
     nodes = material.node_tree.nodes
     for node in nodes:
         if node.bl_idname == "ShaderNodeMapping":
             node.mute = do_mute
+
 
 def add_node(material, shader_node_type, node_name):
     nodes = material.node_tree.nodes
@@ -219,11 +245,13 @@ def add_node(material, shader_node_type, node_name):
         new_node.label = node_name
     return new_node
 
+
 def remove_node(material, node_name):
     nodes = material.node_tree.nodes
     node = nodes.get(node_name)
     if node is not None:
         nodes.remove(node)
+
 
 def remove_unused_nodes(material):
     nodes = material.node_tree.nodes
@@ -231,7 +259,7 @@ def remove_unused_nodes(material):
     connected_nodes = set()
     material_output = nodes.get("Material Output")
 
-    get_all_connected_nodes(material_output,connected_nodes)
+    get_all_connected_nodes(material_output, connected_nodes)
 
     unconnected_nodes = all_nodes - connected_nodes
 
@@ -239,8 +267,9 @@ def remove_unused_nodes(material):
         nodes.remove(node)
     # print(connected_nodes)
 
-def get_all_connected_nodes(node,connected_nodes):
-    
+
+def get_all_connected_nodes(node, connected_nodes):
+
     connected_nodes.add(node)
 
     for input in node.inputs:
