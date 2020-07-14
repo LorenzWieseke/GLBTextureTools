@@ -131,8 +131,8 @@ class BakeUtilities():
             self.tex_node_name = self.bake_settings.texture_node_ao
         
         image_texture_node = node_functions.add_node(material, constants.Shader_Node_Types.image_texture, self.tex_node_name)
-
         image_texture_node.image = self.bake_image
+        self.bake_image.colorspace_settings.name = "Linear"
         nodes.active = image_texture_node
 
         # save texture nodes and pbr nodes for later

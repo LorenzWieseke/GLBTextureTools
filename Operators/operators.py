@@ -274,13 +274,19 @@ class GTT_LightmapEmissionOperator(bpy.types.Operator):
 
             # remove mix node
             mix_node = nodes.get("Mulitply Lightmap")
+
             if mix_node is not None:
-                for area in context.screen.areas:
-                    if area.type == 'NODE_EDITOR':
-                        override = {'area': area}
-                        bpy.ops.node.select_all(override,action='DESELECT')
-                        mix_node.select = True
-                        bpy.ops.node.delete_reconnect(override)
+                color_input_connections = len(mix_node.inputs["Color1"].links)
+
+                if (color_input_connections == 0):
+                    node_functions.remove_node(material,mix_node.name)
+                else:
+                    for area in context.screen.areas:
+                        if area.type == 'NODE_EDITOR':
+                            override = {'area': area}
+                            bpy.ops.node.select_all(override,action='DESELECT')
+                            mix_node.select = True
+                            bpy.ops.node.delete_reconnect(override)
 
         return {'FINISHED'}
 
