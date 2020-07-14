@@ -1,7 +1,6 @@
-
-add option to switch back to org. image size -- done
 use uv-packmaster if installed
 change camera size back to what is was 
 reconstruct node tree in compositor
 pbr texture bake -> add same uv to bake plane to be able to bake procedural textures or ! add uv automaticly
+
 
