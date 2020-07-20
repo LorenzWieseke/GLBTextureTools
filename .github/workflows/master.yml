@@ -2,12 +2,12 @@ name: MasterDeployCI
 on:
   push:
     branches:
-      - master
+      - release
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Create Release Folder
       run: rsync -arv --exclude='.vscode/' --exclude='__pycache__/' --exclude='.git/' --exclude='.github/' --exclude='.gitignore' . ./release
     - name: Switch to Release Folder
