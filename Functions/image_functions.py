@@ -21,10 +21,12 @@ def get_all_images_in_selected_objects(selected_objects):
     
     return images
 
+
 def save_image(image):
 
     filePath = bpy.data.filepath
     path = os.path.dirname(filePath)
+
 
     if not os.path.exists(path + "/textures"):
         os.mkdir(path + "/textures")
@@ -37,17 +39,11 @@ def save_image(image):
 
     # file format
     image.file_format = bpy.context.scene.img_file_format
-    filename, file_extention = os.path.splitext(image.name)
-    file_extention = image.file_format.lower()
-    if file_extention == "jpeg":
-        file_extention = "jpg"
-    if file_extention == "targa":
-        file_extention = "tga"
 
     # change path
-    savepath = path + "\\textures\\GLBTexTool\\" + \
-        str(image.size[0]) + "\\" + image.name
-    image.filepath_raw = savepath + "." + file_extention
+    savepath = path + "\\textures\\GLBTexTool\\" + str(image.size[0]) + "\\" + image.name + "." + image.file_format
+
+    image.filepath_raw = savepath
     image.save()
 
 def create_image(image_name, image_size):

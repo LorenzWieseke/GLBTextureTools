@@ -1,12 +1,12 @@
 import os
 import subprocess
 import bpy
-import mathutils
 
 from .. Functions import node_functions
 from .. Functions import image_functions
 from .. Functions import object_functions
-from .. Bake import bake_utilities
+from .. Functions import visibility_functions
+from .. Functions import basic_functions
 from .. Bake import bake_manager
 from .. Functions import constants
 
@@ -35,7 +35,8 @@ class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
 
         O.object.select_all(action='DESELECT')
         for obj in objects:
-            if obj.ligthmap_name == bake_settings.lightmap_bakes:
+            if obj.lightmap_name or obj.ao_map_name == bake_settings.lightmap_bakes:
+                C.view_layer.objects.active = obj
                 obj.select_set(True)
 
         return {'FINISHED'}
@@ -88,7 +89,7 @@ class GTT_GetMaterialByTextureOperator(bpy.types.Operator):
                 images = [node.image for node in tex_nodes]
                 if sel_image_texture in images:
                     materials_found.append(mat.name)
-                    object_functions.select_obj_by_mat(self,mat)
+                    # object_functions.select_obj_by_mat(self,mat)
                     
 
         return {"FINISHED"}
@@ -150,9 +151,6 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
         # ----------------------- VAR  --------------------#
         active_object = context.object
         selected_objects = context.selected_objects
-
-        # get selcted objects once more without all that curve and emtpy crap
-        selected_objects = context.selected_objects
         bake_settings = context.scene.bake_settings
         texture_settings = context.scene.texture_settings
 
@@ -171,17 +169,20 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
                 return {'FINISHED'}
 
         # ----------------------- SET VISIBLITY TO MATERIAL  --------------------#
-        texture_settings.toggle_lightmap_texture = False
+        texture_settings.preview_bake_texture = False
     
         # ----------------------- LIGHTMAP  --------------------#
         if bake_settings.lightmap or bake_settings.ao_map:
             bake_manager.bake_texture(self,selected_objects,bake_settings)
         
             if bake_settings.show_texture_after_bake:
-                texture_settings.toggle_lightmap_texture = True
+                texture_settings.preview_bake_texture = True
                         
             for obj in selected_objects:
-                obj.ligthmap_name = bake_settings.bake_image_name
+                if bake_settings.ao_map:
+                    obj.ao_map_name = bake_settings.bake_image_name
+                if bake_settings.lightmap:
+                    obj.lightmap_name = bake_settings.bake_image_name
 
         # ----------------------- PBR Texture --------------------#
         if bake_settings.pbr_nodes:
@@ -210,12 +211,12 @@ class GTT_SwitchBakeMaterialOperator(bpy.types.Operator):
         all_mats = bpy.data.materials
         mat_bake = all_mats.get(active_mat.name + "_Bake") 
         
-        # for obj in bpy.data.objects:
-        for slot in active_obj.material_slots:
-            if mat_bake is not None and slot.material is active_mat:
-                slot.material = mat_bake
-            else:
-                self.report({'INFO'}, 'Bake PBR textures first')
+        for obj in bpy.data.objects:
+            for slot in active_obj.material_slots:
+                if mat_bake is not None and slot.material is active_mat:
+                    slot.material = mat_bake
+                else:
+                    self.report({'INFO'}, 'Bake PBR textures first')
 
         return {'FINISHED'}
 
@@ -238,109 +239,61 @@ class GTT_SwitchOrgMaterialOperator(bpy.types.Operator):
         index = active_mat.name.find("_Bake")
         mat_org = all_mats.get(active_mat.name[0:index]) 
 
-        # for obj in bpy.data.objects:
-        for slot in active_obj.material_slots:
-            mat = slot.material
-            if mat_org is not None and mat_org.name in mat.name:
-                slot.material = mat_org
+        for obj in bpy.data.objects:
+            for slot in active_obj.material_slots:
+                mat = slot.material
+                if mat_org is not None and mat_org.name in mat.name:
+                    slot.material = mat_org
 
         return {'FINISHED'}
 
+class GTT_PreviewBakeTextureOperator(bpy.types.Operator):
+    """Connect baked texture to emission to see result"""
+    bl_idname = "object.preview_bake_texture"
+    bl_label = "Preview Bake Texture"
+    
+  
+    def execute(self, context):
+        context.scene.texture_settings.preview_bake_texture = False
+        visibility_functions.preview_bake_texture(self,context)
+
+        return {'FINISHED'}
+
+
+        
 class GTT_LightmapEmissionOperator(bpy.types.Operator):
     """Connect baked Lightmap to Emission input of Principled Shader"""
-    bl_idname = "object.ligthmap_to_emission"
+    bl_idname = "object.lightmap_to_emission"
     bl_label = "Lightmap to Emission"
 
-    @classmethod
-    def poll(cls, context):
-        return (context.object.has_lightmap)
+
+    # @classmethod
+    # def poll(cls, context):
+    #     print(context.scene.bake_settings.lightmap_bakes)
+    #     return (context.object.hasLightmap)
 
     def execute(self, context):
 
-        active_obj = context.object
-        active_mat = context.object.active_material
-
-        for slot in active_obj.material_slots:
-            material = slot.material
-            nodes = material.node_tree.nodes
-
-            pbr_node = node_functions.get_pbr_node(material)
-            lightmap_node = nodes.get("Lightmap")
-
-            emission_input = node_functions.get_pbr_inputs(pbr_node)["emission_input"]
-            lightmap_output = lightmap_node.outputs["Color"]
-
-            node_functions.make_link(material, lightmap_output, emission_input)
-
-            # remove mix node
-            mix_node = nodes.get("Mulitply Lightmap")
-
-            if mix_node is not None:
-                color_input_connections = len(mix_node.inputs["Color1"].links)
-
-                if (color_input_connections == 0):
-                    node_functions.remove_node(material,mix_node.name)
-                else:
-                    for area in context.screen.areas:
-                        if area.type == 'NODE_EDITOR':
-                            override = {'area': area}
-                            bpy.ops.node.select_all(override,action='DESELECT')
-                            mix_node.select = True
-                            bpy.ops.node.delete_reconnect(override)
+        for obj in bpy.data.objects:
+            visibility_functions.lightmap_to_emission(context,obj)
+            
 
         return {'FINISHED'}
 
 class GTT_LightmapBaseColorOperator(bpy.types.Operator):
     """Connect baked Lightmap to Base Color input of Principled Shader"""
-    bl_idname = "object.ligthmap_to_base_color"
+    bl_idname = "object.lightmap_to_base_color"
     bl_label = "Lightmap to Base Color"
 
-    @classmethod
-    def poll(cls, context):
-        return (context.object.has_lightmap)
+    # @classmethod
+    # def poll(cls, context):
+    #     print(context.scene.bake_settings.lightmap_bakes)
+    #     return (context.object.hasLightmap)
 
     def execute(self, context):
 
-        active_obj = context.object
-        active_mat = context.object.active_material
-
-        for slot in active_obj.material_slots:
-            material = slot.material
-            nodes = material.node_tree.nodes
-
-            pbr_node = node_functions.get_pbr_node(material)
-            base_color_input = node_functions.get_pbr_inputs(pbr_node)["base_color_input"]
-            emission_input = node_functions.get_pbr_inputs(pbr_node)["emission_input"]
-
-            lightmap_node = nodes.get("Lightmap")
-            lightmap_output = lightmap_node.outputs["Color"]
-
-            # add mix node
-            mix_node_name = "Mulitply Lightmap"
-            mix_node = node_functions.add_node(material,constants.Shader_Node_Types.mix, mix_node_name)
-            mix_node.blend_type = 'MULTIPLY'
-            mix_node.inputs[0].default_value = 1 # set factor to 1
-            pos_offset = mathutils.Vector((-200, 200))
-            mix_node.location = pbr_node.location + pos_offset
-
-            mix_node_input1 = mix_node.inputs["Color1"]
-            mix_node_input2 = mix_node.inputs["Color2"]
-            mix_node_output = mix_node.outputs["Color"]
-
-            # image texture in base color
-            if base_color_input.is_linked:
-                node_before_base_color = base_color_input.links[0].from_node
-                if not node_before_base_color.name == mix_node_name:
-                    node_functions.make_link(material, node_before_base_color.outputs["Color"], mix_node_input1)
-                    node_functions.make_link(material, lightmap_output, mix_node_input2)
-                    node_functions.make_link(material, mix_node_output, base_color_input)
-            else :
-                mix_node_input1.default_value = base_color_input.default_value 
-                node_functions.make_link(material, lightmap_output, mix_node_input2)
-                node_functions.make_link(material, mix_node_output, base_color_input)
-
-            node_functions.remove_link(material,lightmap_output,emission_input)
-
+        for obj in bpy.data.objects:
+           visibility_functions.lightmap_to_base_color(context,obj)
             
         return {'FINISHED'}
 
@@ -430,10 +383,13 @@ class GTT_RemoveLightmapOperator(bpy.types.Operator):
 
         for mat in all_materials:
             node_functions.remove_node(mat,bake_settings.texture_node_lightmap)
+            node_functions.remove_node(mat,"Mulitply Lightmap")
 
-        #remove ligtmap flag
+        #remove lightmap flag
         for obj in selected_objects:
-            obj.has_lightmap = False 
+            obj.hasLightmap = False 
+            if obj.get('lightmap_name') is not None :
+                del obj["lightmap_name"]
             
         return {'FINISHED'}
 
@@ -452,9 +408,14 @@ class GTT_RemoveAOOperator(bpy.types.Operator):
 
         for mat in all_materials:
             node_functions.remove_node(mat,bake_settings.texture_node_ao)
-            node_functions.remove_node(mat,"Second_UV")
+            # node_functions.remove_node(mat,"Second_UV")
             node_functions.remove_node(mat,"glTF Settings")
-            
+        
+        #remove lightmap flag
+        for obj in selected_objects:
+            if obj.get('ao_map_name') is not None :
+                del obj["ao_map_name"]
+                
         return {'FINISHED'}
 
 class GTT_CleanTexturesOperator(bpy.types.Operator):
@@ -478,6 +439,43 @@ class GTT_CleanMaterialsOperator(bpy.types.Operator):
                 bpy.data.materials.remove(material)
 
         return {'FINISHED'}
+
+class GTT_CleanUnusedImagesOperator(bpy.types.Operator):
+    bl_idname = "scene.clean_unused_images"
+    bl_label = "Clean Images"
+    bl_description = "Selecting all materials in scene that use the selected texture"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        images_in_folder = []
+        images_in_blender = bpy.data.images         
+        image_paths_in_blender = []
+    
+        filePath = bpy.data.filepath
+        path = os.path.dirname(filePath) + "\\textures"
+
+        # find images on hard drive
+        if os.path.exists(path):
+            for path, subdirs, files in os.walk(path):
+                for name in files:
+                    images_in_folder.append(path+"\\"+name)
+        
+        for img in images_in_blender:
+            image_paths_in_blender.append(img.filepath)
+
+        images_intersection = basic_functions.Intersection(image_paths_in_blender,images_in_folder)
+        images_to_clean = basic_functions.Diff(images_in_folder,images_intersection)
+
+        print("Deleting files :")
+        for img in images_to_clean:
+            os.remove(img)
+            print(img)
+        return {'FINISHED'}
+
 
 # ----------------------- FILE OPERATORS--------------------#
 
@@ -506,6 +504,8 @@ class GTT_OpenTexturesFolderOperator(bpy.types.Operator):
             self.report({'INFO'}, 'You need to save Blend file first !')
 
         return {"FINISHED"}
+
+        
 
 
  

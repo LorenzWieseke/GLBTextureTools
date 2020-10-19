@@ -6,6 +6,57 @@ import mathutils
 
 
 # -----------------------COMPOSITING--------------------#
+def blur_bake_image(noisy_image,color_image):
+    
+    # switch on nodes and get reference
+    if not bpy.context.scene.use_nodes:
+        bpy.context.scene.use_nodes = True
+
+    tree = bpy.context.scene.node_tree
+    
+    # bake image
+    image_node = tree.nodes.new(type='CompositorNodeImage')
+    image_node.image = noisy_image
+    image_node.location = 0, 0
+    
+    # color image
+    color_image_node = tree.nodes.new(type='CompositorNodeImage')
+    color_image_node.image = color_image
+    color_image_node.location = 0, 300
+
+    # create blur node
+    blur_node = tree.nodes.new(type='CompositorNodeBilateralblur')
+    blur_node.location = 300, 0
+
+    # create output node
+    comp_node = tree.nodes.new('CompositorNodeComposite')
+    comp_node.location = 600, 0
+
+    # link nodes
+    links = tree.links
+    links.new(image_node.outputs[0], blur_node.inputs[0])
+    links.new(color_image_node.outputs[0], blur_node.inputs[1])
+    links.new(blur_node.outputs[0], comp_node.inputs[0])
+
+    # set output resolution to image res
+    bpy.context.scene.render.resolution_x = noisy_image.size[0]
+    bpy.context.scene.render.resolution_y = noisy_image.size[1]
+
+    filePath = bpy.data.filepath
+    path = os.path.dirname(filePath)
+    scene = bpy.data.scenes["Scene"]
+    scene.render.filepath = path + "\\textures\\GLBTexTool\\" + noisy_image.name + "_Denoise"
+    bpy.ops.render.render(write_still=True)
+    
+    blur_image_path = scene.render.filepath + "." + scene.render.image_settings.file_format.lower()
+        
+    # cleanup
+    comp_nodes = [image_node,color_image_node,blur_node,comp_node]
+    for node in comp_nodes:
+        tree.nodes.remove(node)
+    
+    return blur_image_path
+
 def comp_ai_denoise(noisy_image, nrm_image, color_image):
 
     # switch on nodes and get reference
@@ -39,7 +90,6 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
     denoise_node.location = 300, 0
 
     # create output node
-
     comp_node = tree.nodes.new('CompositorNodeComposite')
     comp_node.location = 600, 0
 
@@ -57,15 +107,14 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
     filePath = bpy.data.filepath
     path = os.path.dirname(filePath)
 
-    bpy.data.scenes["Scene"].render.filepath = path + \
-        "\\textures\\GLBTexTool\\" + noisy_image.name + "_Denoise"
+    scene = bpy.data.scenes["Scene"]
+    scene.render.filepath = path + "\\textures\\GLBTexTool\\" + noisy_image.name + "_Denoise"
     bpy.ops.render.render(write_still=True)
-    denoised_image_path = bpy.data.scenes["Scene"].render.filepath + "." + \
-        bpy.data.scenes["Scene"].render.image_settings.file_format.lower()
+    
+    denoised_image_path = scene.render.filepath + "." + scene.render.image_settings.file_format.lower()
 
     # cleanup
-    comp_nodes = [image_node, nrm_image_node,
-                  color_image_node, denoise_node, comp_node]
+    comp_nodes = [image_node, nrm_image_node,color_image_node, denoise_node, comp_node]
     for node in comp_nodes:
         tree.nodes.remove(node)
 
@@ -252,6 +301,15 @@ def remove_node(material, node_name):
     if node is not None:
         nodes.remove(node)
 
+def remove_reconnect_node(material, node_name):
+    nodes = material.node_tree.nodes
+    node = nodes.get(node_name)
+    input_node = node.inputs["Color1"].links[0].from_node
+    output_node = node.outputs["Color"].links[0].to_node
+
+    if node is not None:
+        make_link(material,input_node.outputs["Color"],output_node.inputs["Base Color"])
+        nodes.remove(node)
 
 def remove_unused_nodes(material):
     nodes = material.node_tree.nodes

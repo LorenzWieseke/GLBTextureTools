@@ -20,4 +20,4 @@ class Shader_Node_Types:
 class Bake_Types:
     pbr = ["EMISSION"]
     lightmap = ["NOISY", "NRM", "COLOR"]
-    ao = ["AO","NRM","COLOR"]
+    ao = ["AO","COLOR"]

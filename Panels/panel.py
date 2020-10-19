@@ -1,11 +1,12 @@
 import bpy
 import os
 from . import panel_ui_list
+from .. Functions import gui_functions
 # from .. Update import addon_updater_ops
 
               
 class GTT_ResolutionPanel(bpy.types.Panel):
-    bl_idname = "RESOLTUION_PT_scale_image_panel"
+    bl_idname = "GLBTEXTOOLS_PT_resolution_panel"
     bl_label = "Output Resolution"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -25,7 +26,7 @@ class GTT_ResolutionPanel(bpy.types.Panel):
  
 
 class GTT_BakeTexturePanel(bpy.types.Panel):
-    bl_idname = "GLBTEXTOOLS_PT_node_to_texture_panel"
+    bl_idname = "GLBTEXTOOLS_PT_bake_panel"
     bl_label = "Baking"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
@@ -104,79 +105,30 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
         row.operator("object.node_to_texture_operator",text="Bake Textures")
         row.operator("scene.open_textures_folder",icon='FILEBROWSER')
         
-        # VISIBILITY
-        layout.label(text="Visiblity")
-        col = layout.column()
-        row = col.row()
-        row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="PBR Material")
-        row.operator("object.switch_bake_mat_operator",icon = 'MATERIAL', text="PBR Baked Material")
-        row = col.row()
-        row.operator("object.ligthmap_to_emission",icon="LIGHT_SUN")
-        row.operator("object.ligthmap_to_base_color",icon="COLORSET_13_VEC")
-        col.separator()
-        row = col.row(align=True)
-        row.prop(scene.texture_settings,"toggle_lightmap_texture", text="Show Material" if scene.texture_settings.toggle_lightmap_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.toggle_lightmap_texture else "NODE_MATERIAL")
-    
-
-def headline(layout,*valueList):
-    box = layout.box()
-    row = box.row()
-    
-    split = row.split()
-    for pair in valueList:
-        split = split.split(factor=pair[0])
-        split.label(text=pair[1])
-        
-class GTT_TextureSelectionPanel(bpy.types.Panel):
-    bl_idname = "GLBTEXTOOLS_PT_tex_selection_panel"
-    bl_label = "Texture"
+class GTT_VisibilityPanel(bpy.types.Panel):
+    bl_idname = "GLBTEXTOOLS_PT_visibility_panel"
+    bl_label = "Visibility"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = 'GLB Texture Tools'
-    # bl_parent_id = "TEXTURETOOLS_PT_parent_panel"
     bl_order = 2
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        data = bpy.data
 
-        texture_settings = bpy.context.scene.texture_settings
-
-        # UI LIST
-        headline(layout,(0.6,"IMAGE NAME"),(0.5,"SIZE"),(1,"KB"))
-        layout.template_list("GTT_TEX_UL_List", "", data, "images", scene.texture_settings, "texture_index")
-        
-        row = layout.row()
-        row.prop(texture_settings, 'open_texture_settings_menu', text="Texture Settings", icon = 'TRIA_DOWN' if texture_settings.open_texture_settings_menu else 'TRIA_RIGHT' )
-        
-        if texture_settings.open_texture_settings_menu:
-
-            box = layout.box()                
-              
-            box.prop(scene.texture_settings, 'show_all_textures', text="Show all Textures")
-            box.prop(scene.texture_settings, 'show_per_material', text="Show Textures per Material")
-            box.prop(scene.texture_settings, 'operate_on_all_textures', text="Operate on all Textures")    
-                      
-            layout.operator("file.unpack_all",text="Unpack")
-
-        # Select Material by Texture
-        row = layout.row()
-        row.prop(scene.texture_settings,"open_sel_mat_menu",text="Select Material by Texture", icon = 'TRIA_DOWN' if scene.texture_settings.open_sel_mat_menu else 'TRIA_RIGHT' )
-        if scene.texture_settings.open_sel_mat_menu:
-            box = layout.box()
-            col = box.column(align = True)
-            col.operator("scene.select_mat_by_tex",text="Select Material",icon='RESTRICT_SELECT_OFF')
-            col = box.column(align = True)
-            if len(scene.materials_found) > 0:
-                col.label(text="Texture found in Material :")
-                for mat in scene.materials_found:
-                    col.label(text=mat)
-            else:
-                col.label(text="Texture not used")
-        # Scale and Clean
-        layout.operator("image.scale_image",text="Scale Image",icon= 'FULLSCREEN_EXIT')
-  
+        col = layout.column()
+        row = col.row()
+        row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="PBR Material")
+        row.operator("object.switch_bake_mat_operator",icon = 'MATERIAL', text="PBR Baked Material")
+        row = col.row()
+        row.operator("object.lightmap_to_emission",icon="LIGHT_SUN")
+        row.operator("object.lightmap_to_base_color",icon="COLORSET_13_VEC")
+        col.separator()
+        row = col.row(align=True)
+        row.prop(scene.texture_settings,"preview_bake_texture", text="Show Material" if scene.texture_settings.preview_bake_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.preview_bake_texture else "NODE_MATERIAL")
+    
+ 
 class GTT_CleanupPanel(bpy.types.Panel):
     bl_idname = "GLBTEXTOOLS_PT_cleanup_panel"
     bl_label = "Cleanup"
@@ -196,7 +148,65 @@ class GTT_CleanupPanel(bpy.types.Panel):
         row.operator("material.remove_lightmap",text="Clean Lightmap",icon = 'MOD_UVPROJECT')
         row.operator("material.remove_ao_map",text="Clean AO Map",icon = 'TRASH')
 
+        row = layout.row()
+        row.operator("scene.clean_unused_images",text="Clean Unused Images",icon = 'TRASH')
 
+        
+class GTT_TextureSelectionPanel(bpy.types.Panel):
+    bl_idname = "GLBTEXTOOLS_PT_tex_selection_panel"
+    bl_label = "Texture"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = 'GLB Texture Tools'
+    # bl_parent_id = "TEXTURETOOLS_PT_parent_panel"
+    bl_order = 4
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        data = bpy.data
+
+        texture_settings = bpy.context.scene.texture_settings
+
+        # UI LIST
+        gui_functions.headline(layout,(0.6,"IMAGE NAME"),(0.5,"SIZE"),(1,"KB"))
+        layout.template_list("GTT_TEX_UL_List", "", data, "images", scene.texture_settings, "texture_index")
+        
+        row = layout.row()
+        row.prop(texture_settings, 'open_texture_settings_menu', text="Texture Settings", icon = 'TRIA_DOWN' if texture_settings.open_texture_settings_menu else 'TRIA_RIGHT' )
+        
+        if texture_settings.open_texture_settings_menu:
+
+            box = layout.box()                
+              
+            box.prop(scene.texture_settings, 'show_all_textures', text="Show all Textures")
+            box.prop(scene.texture_settings, 'show_per_material', text="Show Textures per Material")
+            box.prop(scene.texture_settings, 'operate_on_all_textures', text="Operate on all Textures")    
+
+            row = box.row()          
+            row.operator("file.unpack_all",text="Unpack")
+            row.operator("file.pack_all",text="Pack")
+
+        # Select Material by Texture
+        row = layout.row()
+        row.prop(scene.texture_settings,"open_sel_mat_menu",text="Select Material by Texture", icon = 'TRIA_DOWN' if scene.texture_settings.open_sel_mat_menu else 'TRIA_RIGHT' )
+        
+        if scene.texture_settings.open_sel_mat_menu:
+            box = layout.box()
+            col = box.column(align = True)
+            col.operator("scene.select_mat_by_tex",text="Select Material",icon='RESTRICT_SELECT_OFF')
+            col = box.column(align = True)
+            if len(scene.materials_found) > 0:
+                col.label(text="Texture found in Material :")
+                for mat in scene.materials_found:
+                    col.label(text=mat)
+            else:
+                col.label(text="Texture not used")
+
+        # Scale and Clean
+        row = layout.row()
+        row.scale_y = 2.0
+        row.operator("image.scale_image",text="Scale Image",icon= 'FULLSCREEN_EXIT')
 
 class GTT_UVPanel(bpy.types.Panel):
     bl_idname = "GLBTEXTOOLS_PT_UV_panel"
@@ -205,7 +215,7 @@ class GTT_UVPanel(bpy.types.Panel):
     bl_region_type = "UI"
     bl_category = "GLB Texture Tools"
     bl_options = {'DEFAULT_CLOSED'}
-    bl_order = 4
+    bl_order = 5
 
     def draw(self, context):
         layout = self.layout
@@ -228,7 +238,7 @@ class GTT_HelpPanel(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "GLB Texture Tools"
-    bl_order = 5
+    bl_order = 6
 
     def draw(self, context):
         scene = context.scene

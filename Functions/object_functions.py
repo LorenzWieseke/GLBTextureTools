@@ -7,7 +7,12 @@ last_selection = []
 def update_one_selection(scene): 
     C = bpy.context
     global last_selection
-    if C.selected_objects != last_selection and C.object.type == "MESH":
+    if C.object is None:
+        return
+    if C.object.get('hasLightmap') is None:
+        return
+
+    if C.selected_objects != last_selection:
         last_selection = C.selected_objects
         update_bake_image_name()
         update_bake_list()
@@ -15,8 +20,8 @@ def update_one_selection(scene):
 def update_bake_list():
     C = bpy.context
     bake_settings = C.scene.bake_settings
-    bake_image_name = bake_settings.bake_image_name
-    lightmap_bakes = bake_settings.lightmap_bakes
+    # bake_image_name = bake_settings.bake_image_name
+    # lightmap_bakes = bake_settings.lightmap_bakes
     # if bake_image_name in lightmap_bakes.enum_items:
     try:
         bake_settings.lightmap_bakes = bake_settings.bake_image_name
@@ -53,6 +58,7 @@ def apply_transform_on_linked():
 
 def select_object(self, obj):
     C = bpy.context
+    O = bpy.ops
     try:
         O.object.select_all(action='DESELECT')
         C.view_layer.objects.active = obj
@@ -64,8 +70,7 @@ def select_obj_by_mat(self, mat):
     D = bpy.data
     for obj in D.objects:
         if obj.type == "MESH":
-            object_materials = [
-                slot.material for slot in obj.material_slots]
+            object_materials = [slot.material for slot in obj.material_slots]
             if mat in object_materials:
                 select_object(self, obj)
 

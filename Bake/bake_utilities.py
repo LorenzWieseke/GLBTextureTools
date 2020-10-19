@@ -6,6 +6,7 @@ from .. Functions import constants
 from .. Functions import visibility_functions
 from .. Functions import object_functions
 
+
 class BakeUtilities():
     C = bpy.context
     D = bpy.data
@@ -65,6 +66,11 @@ class BakeUtilities():
                 device = 'CPU'
                 print("GPU not Supported, leaving at CPU")
 
+    def set_active_uv_to_lightmap(self):
+        bpy.ops.object.set_active_uv(uv_slot=2)
+
+
+
     def unwrap_selected(self):
         if self.bake_settings.unwrap:
             self.O.object.add_uv(uv_name=self.bake_settings.uv_name)
@@ -96,8 +102,10 @@ class BakeUtilities():
 
 
             self.O.object.mode_set(mode='EDIT')
+            self.O.mesh.reveal()
             self.O.mesh.select_all(action='SELECT')
             self.O.uv.smart_project(island_margin=self.bake_settings.unwrap_margin)
+             
             self.O.object.mode_set(mode='OBJECT')
 
     def add_gltf_settings_node(self, material):
@@ -222,7 +230,8 @@ class BakeUtilities():
     def bake(self,bake_type):
         channels_to_bake = bake_type
         baked_images = []
-
+        
+        # if no denoise, bake only first image
         if not self.bake_settings.denoise:              
             channel = bake_type[0]
             self.bake_and_save_image(self.bake_image,channel)
@@ -235,9 +244,17 @@ class BakeUtilities():
             bake_image = self.bake_and_save_image(image,channel)
             baked_images.append(bake_image)
 
-        if len(baked_images) == 3:           
-            denoised_image_path = node_functions.comp_ai_denoise(baked_images[0],baked_images[1],baked_images[2],)
+        # denoise
+        if self.bake_settings.lightmap:           
+            denoised_image_path = node_functions.comp_ai_denoise(baked_images[0],baked_images[1],baked_images[2])
             self.bake_image.filepath = denoised_image_path
+            self.bake_image.source = "FILE"
+            self.change_image_in_nodes(self.bake_image)
+            
+        # blur
+        if self.bake_settings.ao_map and self.bake_settings.denoise:
+            blur_image_path = node_functions.blur_bake_image(baked_images[0],baked_images[1])
+            self.bake_image.filepath = blur_image_path
             self.bake_image.source = "FILE"
             self.change_image_in_nodes(self.bake_image)
 
@@ -268,7 +285,7 @@ class BakeUtilities():
 
     def add_lightmap_flag(self):
          for obj in self.selected_objects:
-             obj.has_lightmap = True
+             obj.hasLightmap = True
 
     def cleanup(self):
         self.C.scene.render.engine = self.render_engine
@@ -296,11 +313,16 @@ class PbrBakeUtilities(BakeUtilities):
         self.parent_operator = parent_operator
 
     def ready_for_bake(self):
-            check_ok = node_functions.check_only_one_pbr(self.parent_operator,self.active_material) and node_functions.check_is_org_material(self.parent_operator,self.active_material)
-            if not check_ok :
-                return False
-            return True
-            
+        # check if renderer not set to optix
+        if self.C.preferences.addons["cycles"].preferences.compute_device_type == "OPTIX":
+            self.C.preferences.addons["cycles"].preferences.compute_device_type = "CUDA"
+            self.parent_operator.report({'INFO'}, 'Changing Compute device to CUDA cause Baking in Optix not Supported')
+        # check if pbr node exists
+        check_ok = node_functions.check_only_one_pbr(self.parent_operator,self.active_material) and node_functions.check_is_org_material(self.parent_operator,self.active_material)
+        if not check_ok :
+            return False
+        return True
+                     
     def preview_bake_material(self):
         bpy.context.view_layer.objects.active = self.active_object
         self.active_object.select_set(True)

@@ -8,31 +8,37 @@ from .. Functions import visibility_functions
 def bake_texture(self, selected_objects, bake_settings):
     parent_operator = self
     # ----------------------- CREATE INSTANCE --------------------#
-    ligthmap_utilities = bake_utilities.BakeUtilities(parent_operator, selected_objects, bake_settings)  
+    lightmap_utilities = bake_utilities.BakeUtilities(parent_operator, selected_objects, bake_settings)  
 
+    # -----------------------SET UV--------------------#
+    lightmap_utilities.set_active_uv_to_lightmap()
+    
     # -----------------------SETUP UV'S--------------------#
-    ligthmap_utilities.unwrap_selected()
+    lightmap_utilities.unwrap_selected()
 
     # -----------------------SETUP ENGINE--------------------#
-    ligthmap_utilities.setup_engine()
+    lightmap_utilities.setup_engine()
+
+    # -----------------------CANGE PREVIEW MODE --------------------#
+    bpy.ops.object.preview_bake_texture()
+    
+    # -----------------------CLEAN PREV LIGHTMAP --------------------#
+    bpy.ops.material.remove_lightmap()
 
     # -----------------------SETUP NODES--------------------#
-    ligthmap_utilities.add_node_setup()
+    lightmap_utilities.add_node_setup()
     
     # ----------------------- BAKING --------------------#
     if bake_settings.lightmap:
-        ligthmap_utilities.save_metal_value()
-        ligthmap_utilities.bake(constants.Bake_Types.lightmap)
-        ligthmap_utilities.load_metal_value()
-        ligthmap_utilities.add_lightmap_flag()
+        lightmap_utilities.save_metal_value()
+        lightmap_utilities.bake(constants.Bake_Types.lightmap)
+        lightmap_utilities.load_metal_value()
+        lightmap_utilities.add_lightmap_flag()
     
     if bake_settings.ao_map:
-        ligthmap_utilities.bake(constants.Bake_Types.ao)
+        lightmap_utilities.bake(constants.Bake_Types.ao)
 
-    ligthmap_utilities.cleanup()
-
-
-    
+    lightmap_utilities.cleanup()
     return
 
 

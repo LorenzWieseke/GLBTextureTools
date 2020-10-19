@@ -83,7 +83,7 @@ class GTT_Texture_Settings(bpy.types.PropertyGroup):
     show_per_material:BoolProperty(default=False)
     operate_on_all_textures:BoolProperty(default=False)
 
-    toggle_lightmap_texture:BoolProperty(default=False,update=visibility_functions.preview_bake_texture)
+    preview_bake_texture:BoolProperty(default=False,update=visibility_functions.preview_bake_texture)
     texture_index:IntProperty(name = "Index for Texture List", default = 0, update=visibility_functions.show_selected_image_in_image_editor)
 
 bpy.utils.register_class(GTT_Texture_Settings)
@@ -100,7 +100,7 @@ bpy.types.Image.org_filepath = StringProperty()
 bpy.types.Image.org_image_name = StringProperty()
 
 # OBJECT PROPERTIES
-bpy.types.Object.has_lightmap = BoolProperty()
-bpy.types.Object.ligthmap_name = StringProperty()
+bpy.types.Object.hasLightmap = BoolProperty()
+bpy.types.Object.lightmap_name = StringProperty()
 bpy.types.Object.ao_map_name = StringProperty()
 
