@@ -252,9 +252,9 @@ class GTT_PreviewBakeTextureOperator(bpy.types.Operator):
     bl_idname = "object.preview_bake_texture"
     bl_label = "Preview Bake Texture"
     
-  
+    connect : bpy.props.BoolProperty()
     def execute(self, context):
-        context.scene.texture_settings.preview_bake_texture = False
+        context.scene.texture_settings.preview_bake_texture = self.connect
         visibility_functions.preview_bake_texture(self,context)
 
         return {'FINISHED'}
@@ -266,34 +266,23 @@ class GTT_LightmapEmissionOperator(bpy.types.Operator):
     bl_idname = "object.lightmap_to_emission"
     bl_label = "Lightmap to Emission"
 
-
-    # @classmethod
-    # def poll(cls, context):
-    #     print(context.scene.bake_settings.lightmap_bakes)
-    #     return (context.object.hasLightmap)
-
+    connect : bpy.props.BoolProperty()
     def execute(self, context):
 
-        for obj in bpy.data.objects:
-            visibility_functions.lightmap_to_emission(context,obj)
+        visibility_functions.lightmap_to_emission(self,context,self.connect)
             
 
         return {'FINISHED'}
 
-class GTT_LightmapBaseColorOperator(bpy.types.Operator):
+class GTT_PreviewLightmap(bpy.types.Operator):
     """Connect baked Lightmap to Base Color input of Principled Shader"""
-    bl_idname = "object.lightmap_to_base_color"
+    bl_idname = "object.preview_lightmap"
     bl_label = "Lightmap to Base Color"
 
-    # @classmethod
-    # def poll(cls, context):
-    #     print(context.scene.bake_settings.lightmap_bakes)
-    #     return (context.object.hasLightmap)
-
+    connect : bpy.props.BoolProperty()
     def execute(self, context):
-
-        for obj in bpy.data.objects:
-           visibility_functions.lightmap_to_base_color(context,obj)
+        context.scene.texture_settings.preview_lightmap = self.connect
+        visibility_functions.preview_lightmap(self,context)
             
         return {'FINISHED'}
 

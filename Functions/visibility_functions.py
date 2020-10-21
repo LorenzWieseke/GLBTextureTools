@@ -59,13 +59,13 @@ def preview_bake_texture(self, context):
                 node_functions.reconnect_PBR(mat, pbr_node)
 
 
-def lightmap_to_base_color(self, obj):
-
-        if obj.get('lightmap_name') is None:
-            return
-
-        for slot in obj.material_slots:
-            material = slot.material
+def preview_lightmap(self, context):
+        preview_lightmap = context.scene.texture_settings.preview_lightmap
+        all_materials = bpy.data.materials
+        for material in all_materials:
+            if not material.node_tree:
+                continue
+                   
             nodes = material.node_tree.nodes
 
             pbr_node = node_functions.get_pbr_node(material)
@@ -76,42 +76,62 @@ def lightmap_to_base_color(self, obj):
             if lightmap_node is None:
                 continue
             lightmap_output = lightmap_node.outputs["Color"]
+            
+            if preview_lightmap:
 
-            # add mix node
-            mix_node_name = "Mulitply Lightmap"
-            mix_node = node_functions.add_node(material,constants.Shader_Node_Types.mix, mix_node_name)
-            mix_node.blend_type = 'MULTIPLY'
-            mix_node.inputs[0].default_value = 1 # set factor to 1
-            pos_offset = mathutils.Vector((-200, 200))
-            mix_node.location = pbr_node.location + pos_offset
+                # add mix node
+                mix_node_name = "Mulitply Lightmap"
+                mix_node = node_functions.add_node(material,constants.Shader_Node_Types.mix, mix_node_name)
+                mix_node.blend_type = 'MULTIPLY'
+                mix_node.inputs[0].default_value = 1 # set factor to 1
+                pos_offset = mathutils.Vector((-200, 200))
+                mix_node.location = pbr_node.location + pos_offset
 
-            mix_node_input1 = mix_node.inputs["Color1"]
-            mix_node_input2 = mix_node.inputs["Color2"]
-            mix_node_output = mix_node.outputs["Color"]
+                mix_node_input1 = mix_node.inputs["Color1"]
+                mix_node_input2 = mix_node.inputs["Color2"]
+                mix_node_output = mix_node.outputs["Color"]
 
-            # image texture in base color
-            if base_color_input.is_linked:
-                node_before_base_color = base_color_input.links[0].from_node
-                if not node_before_base_color.name == mix_node_name:
-                    node_functions.make_link(material, node_before_base_color.outputs["Color"], mix_node_input1)
+                # image texture in base color
+                if base_color_input.is_linked:
+                    node_before_base_color = base_color_input.links[0].from_node
+                    if not node_before_base_color.name == mix_node_name:
+                        node_functions.make_link(material, node_before_base_color.outputs["Color"], mix_node_input1)
+                        node_functions.make_link(material, lightmap_output, mix_node_input2)
+                        node_functions.make_link(material, mix_node_output, base_color_input)
+                else :
+                    mix_node_input1.default_value = base_color_input.default_value 
                     node_functions.make_link(material, lightmap_output, mix_node_input2)
                     node_functions.make_link(material, mix_node_output, base_color_input)
-            else :
-                mix_node_input1.default_value = base_color_input.default_value 
-                node_functions.make_link(material, lightmap_output, mix_node_input2)
-                node_functions.make_link(material, mix_node_output, base_color_input)
 
-            node_functions.remove_link(material,lightmap_output,emission_input)
+                node_functions.remove_link(material,lightmap_output,emission_input)
+            
+            if not preview_lightmap:
+                
+                # remove mix and reconnect base color
+
+                mix_node = nodes.get("Mulitply Lightmap")
+
+                if mix_node is not None:
+                    color_input_connections = len(mix_node.inputs["Color1"].links)
+
+                    if (color_input_connections == 0):
+                        node_functions.remove_node(material,mix_node.name)
+                    else:
+                        node_functions.remove_reconnect_node(material,mix_node.name)
+                
+                node_functions.link_pbr_to_output(material,pbr_node)
+                        
+                
 
 
 
-def lightmap_to_emission(self, obj):
-    context = self
-    if obj.get('lightmap_name') is None:
-        return
+def lightmap_to_emission(self, context, connect):
+    
+    all_materials = bpy.data.materials
+    for material in all_materials:
+        if not material.node_tree:
+            continue
 
-    for slot in obj.material_slots:
-        material = slot.material
         nodes = material.node_tree.nodes
 
         pbr_node = node_functions.get_pbr_node(material)
@@ -123,22 +143,10 @@ def lightmap_to_emission(self, obj):
         emission_input = node_functions.get_pbr_inputs(pbr_node)["emission_input"]
         lightmap_output = lightmap_node.outputs["Color"]
 
-        node_functions.make_link(material, lightmap_output, emission_input)
+        if connect:
+            node_functions.make_link(material, lightmap_output, emission_input)
+        else:
+            node_functions.remove_link(material,lightmap_output,emission_input)
 
-        # remove mix node
-        mix_node = nodes.get("Mulitply Lightmap")
 
-        if mix_node is not None:
-            color_input_connections = len(mix_node.inputs["Color1"].links)
-
-            if (color_input_connections == 0):
-                node_functions.remove_node(material,mix_node.name)
-            else:
-                node_functions.remove_reconnect_node(material,mix_node.name)
-                # for area in context.screen.areas:
-                #     if area.type == 'NODE_EDITOR':
-                #         override = {'area': area}
-                #         bpy.ops.node.select_all(override,action='DESELECT')
-                #         mix_node.select = True
-                #         bpy.ops.node.delete_reconnect(override)
 

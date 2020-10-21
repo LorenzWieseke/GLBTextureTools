@@ -121,12 +121,10 @@ class GTT_VisibilityPanel(bpy.types.Panel):
         row = col.row()
         row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="PBR Material")
         row.operator("object.switch_bake_mat_operator",icon = 'MATERIAL', text="PBR Baked Material")
-        row = col.row()
-        row.operator("object.lightmap_to_emission",icon="LIGHT_SUN")
-        row.operator("object.lightmap_to_base_color",icon="COLORSET_13_VEC")
-        col.separator()
-        row = col.row(align=True)
-        row.prop(scene.texture_settings,"preview_bake_texture", text="Show Material" if scene.texture_settings.preview_bake_texture else "Show Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.preview_bake_texture else "NODE_MATERIAL")
+
+        # row = col.row(align=True)
+        layout.prop(scene.texture_settings,"preview_lightmap",text="Show without Lightmap" if scene.texture_settings.preview_lightmap else "Preview Lightmap", icon="SHADING_RENDERED" if scene.texture_settings.preview_bake_texture else "NODE_MATERIAL")
+        layout.prop(scene.texture_settings,"preview_bake_texture", text="Show Material" if scene.texture_settings.preview_bake_texture else "Preview Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.preview_bake_texture else "NODE_MATERIAL")
     
  
 class GTT_CleanupPanel(bpy.types.Panel):

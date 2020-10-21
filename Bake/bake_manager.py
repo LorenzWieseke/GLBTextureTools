@@ -10,7 +10,7 @@ def bake_texture(self, selected_objects, bake_settings):
     # ----------------------- CREATE INSTANCE --------------------#
     lightmap_utilities = bake_utilities.BakeUtilities(parent_operator, selected_objects, bake_settings)  
 
-    # -----------------------SET UV--------------------#
+    # -----------------------SET LIGHTMAP UV--------------------#
     lightmap_utilities.set_active_uv_to_lightmap()
     
     # -----------------------SETUP UV'S--------------------#
@@ -20,16 +20,15 @@ def bake_texture(self, selected_objects, bake_settings):
     lightmap_utilities.setup_engine()
 
     # -----------------------CANGE PREVIEW MODE --------------------#
-    bpy.ops.object.preview_bake_texture()
-    
-    # -----------------------CLEAN PREV LIGHTMAP --------------------#
-    bpy.ops.material.remove_lightmap()
+    bpy.ops.object.preview_bake_texture(connect=False)
 
     # -----------------------SETUP NODES--------------------#
     lightmap_utilities.add_node_setup()
     
     # ----------------------- BAKING --------------------#
     if bake_settings.lightmap:
+        # bpy.ops.material.remove_lightmap()
+        bpy.ops.object.preview_lightmap(connect=False)
         lightmap_utilities.save_metal_value()
         lightmap_utilities.bake(constants.Bake_Types.lightmap)
         lightmap_utilities.load_metal_value()
