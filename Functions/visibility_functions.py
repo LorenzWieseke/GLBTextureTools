@@ -65,16 +65,17 @@ def preview_lightmap(self, context):
         for material in all_materials:
             if not material.node_tree:
                 continue
-                   
+            
             nodes = material.node_tree.nodes
-
-            pbr_node = node_functions.get_pbr_node(material)
-            base_color_input = node_functions.get_pbr_inputs(pbr_node)["base_color_input"]
-            emission_input = node_functions.get_pbr_inputs(pbr_node)["emission_input"]
 
             lightmap_node = nodes.get("Lightmap")
             if lightmap_node is None:
                 continue
+            
+            pbr_node = node_functions.get_pbr_node(material)
+            base_color_input = node_functions.get_pbr_inputs(pbr_node)["base_color_input"]
+            emission_input = node_functions.get_pbr_inputs(pbr_node)["emission_input"]
+
             lightmap_output = lightmap_node.outputs["Color"]
             
             if preview_lightmap:

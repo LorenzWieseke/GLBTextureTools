@@ -210,7 +210,9 @@ def get_node_by_name_recusivly(node, idname):
 
 def get_pbr_node(material):
     nodes = material.node_tree.nodes
-    return get_node_by_type(nodes, constants.Node_Types.pbr_node)[0]
+    pbr_node = get_node_by_type(nodes, constants.Node_Types.pbr_node)
+    if len(pbr_node) > 0:
+        return pbr_node[0]
 
 
 def make_link(material, socket1, socket2):
