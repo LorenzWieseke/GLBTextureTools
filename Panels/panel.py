@@ -143,8 +143,8 @@ class GTT_CleanupPanel(bpy.types.Panel):
         row.operator("material.clean_materials",text="Clean Materials",icon = 'NODE_MATERIAL')
 
         row = layout.row()
-        row.operator("material.remove_lightmap",text="Clean Lightmap",icon = 'MOD_UVPROJECT')
-        row.operator("material.remove_ao_map",text="Clean AO Map",icon = 'TRASH')
+        row.operator("material.clean_lightmap",text="Clean Lightmap",icon = 'MOD_UVPROJECT')
+        row.operator("material.clean_ao_map",text="Clean AO Map",icon = 'TRASH')
 
         row = layout.row()
         row.operator("scene.clean_unused_images",text="Clean Unused Images",icon = 'TRASH')

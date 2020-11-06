@@ -14,6 +14,11 @@ def blur_bake_image(noisy_image,color_image):
 
     tree = bpy.context.scene.node_tree
     
+    # add cam if not in scene  
+    cam = bpy.context.scene.camera
+    if not cam:
+        bpy.ops.object.camera_add()
+    
     # bake image
     image_node = tree.nodes.new(type='CompositorNodeImage')
     image_node.image = noisy_image

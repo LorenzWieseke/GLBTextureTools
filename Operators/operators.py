@@ -357,8 +357,8 @@ class GTT_SetActiveUVOperator(bpy.types.Operator):
 
 # class CleanBakesOperator(bpy.types.Operator):
 class GTT_RemoveLightmapOperator(bpy.types.Operator):
-    bl_idname = "material.remove_lightmap"
-    bl_label = "Remove Lightmap"
+    bl_idname = "material.clean_lightmap"
+    bl_label = "Clean Lightmap"
 
     def execute(self, context):
 
@@ -371,6 +371,8 @@ class GTT_RemoveLightmapOperator(bpy.types.Operator):
                 all_materials.add(slot.material)
 
         for mat in all_materials:
+            if mat is None:
+                continue
             node_functions.remove_node(mat,bake_settings.texture_node_lightmap)
             node_functions.remove_node(mat,"Mulitply Lightmap")
 
@@ -383,8 +385,8 @@ class GTT_RemoveLightmapOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 class GTT_RemoveAOOperator(bpy.types.Operator):
-    bl_idname = "material.remove_ao_map"
-    bl_label = "Remove AO map"
+    bl_idname = "material.clean_ao_map"
+    bl_label = "Clean AO map"
 
     def execute(self, context):
         bake_settings = context.scene.bake_settings
@@ -396,6 +398,9 @@ class GTT_RemoveAOOperator(bpy.types.Operator):
                 all_materials.add(slot.material)
 
         for mat in all_materials:
+            if mat is None:
+                continue
+                
             node_functions.remove_node(mat,bake_settings.texture_node_ao)
             # node_functions.remove_node(mat,"Second_UV")
             node_functions.remove_node(mat,"glTF Settings")
