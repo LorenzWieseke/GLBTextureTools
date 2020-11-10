@@ -53,7 +53,15 @@ def blur_bake_image(noisy_image,color_image):
     scene.render.filepath = path + "\\textures\\GLBTexTool\\" + noisy_image.name + "_Denoise"
     bpy.ops.render.render(write_still=True)
     
-    blur_image_path = scene.render.filepath + "." + scene.render.image_settings.file_format.lower()
+    # set output image format
+    file_extention = ""
+    scene.render.image_settings.file_format = bpy.context.scene.img_file_format
+    if bpy.context.scene.img_file_format == "JPEG":
+        file_extention = "jpg"
+    else:
+        file_extention = scene.render.image_settings.file_format.lower()
+    
+    blur_image_path = scene.render.filepath + "." + file_extention
         
     # cleanup
     comp_nodes = [image_node,color_image_node,blur_node,comp_node]
@@ -116,7 +124,15 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
     scene.render.filepath = path + "\\textures\\GLBTexTool\\" + noisy_image.name + "_Denoise"
     bpy.ops.render.render(write_still=True)
     
-    denoised_image_path = scene.render.filepath + "." + scene.render.image_settings.file_format.lower()
+    # set output image format
+    file_extention = ""
+    scene.render.image_settings.file_format = bpy.context.scene.img_file_format
+    if bpy.context.scene.img_file_format == "JPEG":
+        file_extention = "jpg"
+    else:
+        file_extention = scene.render.image_settings.file_format.lower()
+    
+    denoised_image_path = scene.render.filepath + "." + file_extention
 
     # cleanup
     comp_nodes = [image_node, nrm_image_node,color_image_node, denoise_node, comp_node]
