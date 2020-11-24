@@ -37,6 +37,7 @@ class BakeUtilities():
         self.selected_objects = selected_objects
         self.all_materials = all_materials
         self.bake_settings = bake_settings
+        self.baked_images = []
         self.image_texture_nodes = set()
         self.image_size = [int(self.C.scene.img_bake_size),
                       int(self.C.scene.img_bake_size)]
@@ -45,8 +46,14 @@ class BakeUtilities():
         self.bake_image = image_functions.create_image(image_name, self.image_size)
 
     def setup_engine(self):
+        # setup engine
         if self.render_engine == 'BLENDER_EEVEE':
             self.C.scene.render.engine = 'CYCLES'
+            
+        # setup device type
+        self.cycles_device_type = self.C.preferences.addons['cycles'].preferences.compute_device_type
+        if self.cycles_device_type == 'OPTIX':
+            self.C.preferences.addons['cycles'].preferences.compute_device_type = 'CUDA'
         
         # setup samples
         if self.bake_settings.pbr_nodes:
@@ -105,7 +112,6 @@ class BakeUtilities():
             self.O.mesh.reveal()
             self.O.mesh.select_all(action='SELECT')
             self.O.uv.smart_project(island_margin=self.bake_settings.unwrap_margin)
-             
             self.O.object.mode_set(mode='OBJECT')
 
     def add_gltf_settings_node(self, material):
@@ -229,7 +235,7 @@ class BakeUtilities():
 
     def bake(self,bake_type):
         channels_to_bake = bake_type
-        baked_images = []
+        self.baked_images = []
         
         # if no denoise, bake only first image
         if not self.bake_settings.denoise:              
@@ -242,18 +248,19 @@ class BakeUtilities():
             image = image_functions.create_image(image_name,self.bake_image.size)
             self.change_image_in_nodes(image)
             bake_image = self.bake_and_save_image(image,channel)
-            baked_images.append(bake_image)
+            self.baked_images.append(bake_image)
 
+    def denoise(self):
         # denoise
         if self.bake_settings.lightmap:           
-            denoised_image_path = node_functions.comp_ai_denoise(baked_images[0],baked_images[1],baked_images[2])
+            denoised_image_path = node_functions.comp_ai_denoise(self.baked_images[0],self.baked_images[1],self.baked_images[2])
             self.bake_image.filepath = denoised_image_path
             self.bake_image.source = "FILE"
             self.change_image_in_nodes(self.bake_image)
             
         # blur
         if self.bake_settings.ao_map and self.bake_settings.denoise:
-            blur_image_path = node_functions.blur_bake_image(baked_images[0],baked_images[1])
+            blur_image_path = node_functions.blur_bake_image(self.baked_images[0],self.baked_images[1])
             self.bake_image.filepath = blur_image_path
             self.bake_image.source = "FILE"
             self.change_image_in_nodes(self.bake_image)
@@ -264,13 +271,6 @@ class BakeUtilities():
                 image_texture_node.image = image
 
     def bake_and_save_image(self, image, channel):
-
-        if channel == "NOISY":
-            self.O.object.bake(type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-            
-        if channel == "AO":
-            self.O.object.bake(type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-        
         if channel == "NRM":
             self.C.scene.cycles.samples = 1
             self.O.object.bake(type="NORMAL", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
@@ -279,7 +279,12 @@ class BakeUtilities():
             self.C.scene.cycles.samples = 1
             self.O.object.bake(type="DIFFUSE", pass_filter={'COLOR'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
 
-        image_functions.save_image(image)
+        if channel == "AO":
+            self.O.object.bake('INVOKE_DEFAULT',type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+        
+        if channel == "NOISY":
+            self.O.object.bake('INVOKE_DEFAULT',type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+            image_functions.save_image(image)
 
         return image
 
@@ -288,7 +293,9 @@ class BakeUtilities():
              obj.hasLightmap = True
 
     def cleanup(self):
+        # set back engine
         self.C.scene.render.engine = self.render_engine
+        self.C.preferences.addons['cycles'].preferences.compute_device_type = self.cycles_device_type
 
         # cleanup images
         if self.bake_settings.cleanup_textures:
