@@ -4,8 +4,8 @@ from .. Functions import image_functions
 from .. Functions import constants
 
 class GTT_TEX_UL_List(bpy.types.UIList):
+    image_name_list = set()
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
-
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             row = layout.row()
 
@@ -53,10 +53,16 @@ class GTT_TEX_UL_List(bpy.types.UIList):
                 nodes = mat.node_tree.nodes
                 tex_nodes = node_functions.get_node_by_type(nodes,constants.Node_Types.image_texture)
                 [images.append(node.image.name) for node in tex_nodes]
-
+        
+        # save filtered list to texture settings / ui_list_itmes
+        self.image_name_list.clear()
+        for img in images:
+            self.image_name_list.add(img)
         flt_flags = [self.bitflag_filter_item if name in images else 0 for name in all_image_names]
 
         return flt_flags, flt_neworder
+    
+
 
 class GTT_BAKE_IMAGE_UL_List(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):

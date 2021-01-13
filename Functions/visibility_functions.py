@@ -5,7 +5,7 @@ from . import constants
 import mathutils
 
 
-def show_selected_image_in_image_editor(self, context):
+def update_selected_image(self, context):
     sel_texture = bpy.data.images[self.texture_index]
     show_image_in_image_editor(sel_texture)
 

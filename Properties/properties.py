@@ -85,7 +85,7 @@ class GTT_Texture_Settings(bpy.types.PropertyGroup):
 
     preview_bake_texture:BoolProperty(default=False,update=visibility_functions.preview_bake_texture)
     preview_lightmap:BoolProperty(default=False,update=visibility_functions.preview_lightmap)
-    texture_index:IntProperty(name = "Index for Texture List", default = 0, update=visibility_functions.show_selected_image_in_image_editor)
+    texture_index:IntProperty(name = "Index for Texture List", default = 0, update=visibility_functions.update_selected_image)
 
 bpy.utils.register_class(GTT_Texture_Settings)
 bpy.types.Scene.texture_settings = PointerProperty(type=GTT_Texture_Settings)

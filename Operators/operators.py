@@ -105,7 +105,11 @@ class GTT_ScaleImageOperator(bpy.types.Operator):
         images = D.images
 
         display = True
-
+        
+        # if operate on all textures is checked we don't need to get the index
+        if context.scene.texture_settings.operate_on_all_textures:
+            return True
+        
         # image to index not found 
         try:
             sel_image_texture = images[context.scene.texture_settings.texture_index]
@@ -115,25 +119,31 @@ class GTT_ScaleImageOperator(bpy.types.Operator):
             display = False
         return display
 
-    def execute(self, context):
+    def invoke(self,context,event):
         D = bpy.data
         
-        selected_objects = context.selected_objects
         texture_settings = context.scene.texture_settings
         image_size = [int(context.scene.img_bake_size),int(context.scene.img_bake_size)]
         
-
-        images = D.images
-        sel_image_texture = images[texture_settings.texture_index]
-        all_images = image_functions.get_all_images_in_selected_objects(selected_objects)
+        images_in_scene = D.images
+        all_images = image_functions.get_all_images_in_ui_list()
 
         if texture_settings.operate_on_all_textures:
             for img in all_images:
                 image_functions.scale_image(img,image_size)
         else:
+            sel_image_texture = images_in_scene[texture_settings.texture_index]
             image_functions.scale_image(sel_image_texture,image_size)
 
         return {'FINISHED'}
+    
+    def modal(self, context, event):
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
+            return {'CANCELLED'}
+
+        return {'PASS_THROUGH'}
+
+
 
 class GTT_NodeToTextureOperator(bpy.types.Operator):
     """Bake all attached Textures"""

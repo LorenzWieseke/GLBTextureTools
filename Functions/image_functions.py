@@ -5,21 +5,16 @@ from . import constants
 
 # def get_all_images_in_material()
 
-def get_all_images_in_selected_objects(selected_objects):
-    all_materials = set()
-    images = []
-
-    slots_array = [obj.material_slots for obj in selected_objects]
-    for slots in slots_array:
-        for slot in slots:
-            all_materials.add(slot.material)
+def get_all_images_in_ui_list():
     
-    for mat in all_materials:
-            nodes = mat.node_tree.nodes
-            tex_nodes = node_functions.get_node_by_type(nodes,constants.Node_Types.image_texture)
-            [images.append(node.image) for node in tex_nodes]
+    images_in_scene = bpy.data.images
+    image_name_list = bpy.types.GTT_TEX_UL_List.image_name_list
+    images_found = []
     
-    return images
+    if len(image_name_list) > 0:
+        images_found = [img for img in images_in_scene for name_list_entry in image_name_list if img.name == name_list_entry]
+        
+    return images_found
 
 
 def save_image(image):
