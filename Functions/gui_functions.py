@@ -76,3 +76,49 @@ def headline(layout,*valueList):
     for pair in valueList:
         split = split.split(factor=pair[0])
         split.label(text=pair[1])
+        
+        
+ # TODO check this out later        
+
+# last_selection = []
+
+# def update_one_selection(scene): 
+#     C = bpy.context
+#     global last_selection
+#     if C.selected_objects != last_selection and C.object.type == "MESH":
+#         last_selection = C.selected_objects
+#         update_bake_image_name()
+#         update_bake_list()
+
+# def update_bake_list():
+#     C = bpy.context
+#     bake_settings = C.scene.bake_settings
+#     bake_image_name = bake_settings.bake_image_name
+#     lightmap_bakes = bake_settings.lightmap_bakes
+#     # if bake_image_name in lightmap_bakes.enum_items:
+#     try:
+#         bake_settings.lightmap_bakes = bake_settings.bake_image_name
+#     except:
+#         pass
+       
+
+# def update_bake_image_name():
+#     C = bpy.context
+
+#     active_mat = C.object.active_material
+
+#     if active_mat is None:
+#         return
+
+#     bake_settings = C.scene.bake_settings
+#     nodes = active_mat.node_tree.nodes
+
+#     image_name = "New Name"
+#     if bake_settings.lightmap:
+#         if nodes.get(bake_settings.texture_node_lightmap):
+#             image_name = nodes.get(bake_settings.texture_node_lightmap).image.name
+#     if bake_settings.ao_map:
+#         if nodes.get(bake_settings.texture_node_ao):
+#             image_name = nodes.get(bake_settings.texture_node_ao).image.name
+
+#     bake_settings.bake_image_name = image_name
