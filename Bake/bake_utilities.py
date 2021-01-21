@@ -247,8 +247,10 @@ class BakeUtilities():
             image_name = self.bake_image.name + "_" + channel 
             image = image_functions.create_image(image_name,self.bake_image.size)
             self.change_image_in_nodes(image)
-            bake_image = self.bake_and_save_image(image,channel)
-            self.baked_images.append(bake_image)
+            baked_channel_image = self.bake_and_save_image(image,channel)
+            self.baked_images.append(baked_channel_image)
+            
+        self.denoise()
 
     def denoise(self):
         # denoise
@@ -284,7 +286,8 @@ class BakeUtilities():
         
         if channel == "NOISY":
             self.O.object.bake(type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-            image_functions.save_image(image)
+        
+        image_functions.save_image(image)
 
         return image
 
