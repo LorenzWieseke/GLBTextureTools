@@ -21,7 +21,7 @@ def update_ao_button(self,context):
     
 last_selection = []
 
-def update_one_selection(scene): 
+def update_on_selection(scene): 
     C = bpy.context
     global last_selection
     if C.object is None:
@@ -62,8 +62,9 @@ def update_active_element_in_bake_list():
     if bake_image_name is None:
         bake_image_name = "New Name"
     
-    bake_settings.bake_image_name = bake_image_name
-    bake_settings.lightmap_bakes = bake_image_name
+    if bake_image_name is not "":
+        bake_settings.bake_image_name = bake_image_name
+        bake_settings.lightmap_bakes = bake_image_name
     
 
 def headline(layout,*valueList):

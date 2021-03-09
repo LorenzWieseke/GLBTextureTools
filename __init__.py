@@ -35,7 +35,7 @@ classes = auto_load.get_classes()
 def register():
     auto_load.register()
     bpy.app.handlers.depsgraph_update_post.clear()
-    bpy.app.handlers.depsgraph_update_post.append(gui_functions.update_one_selection)
+    bpy.app.handlers.depsgraph_update_post.append(gui_functions.update_on_selection)
 
 
 def unregister():
