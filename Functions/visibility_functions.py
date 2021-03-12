@@ -1,6 +1,7 @@
 import bpy
 from . import node_functions
 from . import object_functions
+from . import material_functions
 from . import constants
 import mathutils
 
@@ -19,23 +20,24 @@ def show_image_in_image_editor(image):
 def preview_bake_material():
     C = bpy.context
 
-    active_obj = C.active_object
+    # active_obj = C.active_object
     active_mat = C.active_object.active_material
 
     all_mats = bpy.data.materials
     mat_bake = all_mats.get(active_mat.name + "_Bake")
 
-    # for obj in bpy.data.objects:
-    for slot in active_obj.material_slots:
-        if mat_bake is not None and slot.material is active_mat:
-            slot.material = mat_bake
+    for obj in bpy.data.objects:
+        for slot in obj.material_slots:
+            if mat_bake is not None and slot.material is active_mat:
+                slot.material = mat_bake
 
 
 def preview_bake_texture(self, context):
-    all_materials = bpy.data.materials
+
     bake_settings = context.scene.bake_settings
     preview_bake_texture = context.scene.texture_settings.preview_bake_texture
-    for mat in all_materials:
+    vis_mats = material_functions.get_all_visible_materials()
+    for mat in vis_mats:
         if not mat.node_tree:
             continue
 
@@ -50,19 +52,21 @@ def preview_bake_texture(self, context):
 
         if bake_texture_node is not None:
             if preview_bake_texture:
-                node_functions.emission_setup(
-                    mat, bake_texture_node.outputs["Color"])
+                node_functions.emission_setup(mat, bake_texture_node.outputs["Color"])
             else:
-                pbr_node = node_functions.get_node_by_type(
-                    nodes, constants.Node_Types.pbr_node)[0]
+                pbr_node = node_functions.get_node_by_type(nodes, constants.Node_Types.pbr_node)
+                if len(pbr_node) == 0:
+                    return
+                
+                pbr_node = pbr_node[0]
                 node_functions.remove_node(mat, "Emission Bake")
                 node_functions.reconnect_PBR(mat, pbr_node)
 
 
 def preview_lightmap(self, context):
         preview_lightmap = context.scene.texture_settings.preview_lightmap
-        all_materials = bpy.data.materials
-        for material in all_materials:
+        vis_mats = material_functions.get_all_visible_materials()
+        for material in vis_mats:
             if not material.node_tree:
                 continue
             
@@ -73,6 +77,9 @@ def preview_lightmap(self, context):
                 continue
             
             pbr_node = node_functions.get_pbr_node(material)
+            if pbr_node is None:
+                print("\n " + material.name + " has no PBR Node \n")
+                continue
             base_color_input = node_functions.get_pbr_inputs(pbr_node)["base_color_input"]
             emission_input = node_functions.get_pbr_inputs(pbr_node)["emission_input"]
 
@@ -128,8 +135,8 @@ def preview_lightmap(self, context):
 
 def lightmap_to_emission(self, context, connect):
     
-    all_materials = bpy.data.materials
-    for material in all_materials:
+    vis_mats = material_functions.get_all_visible_materials()
+    for material in vis_mats:
         if not material.node_tree:
             continue
 

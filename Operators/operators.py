@@ -7,9 +7,30 @@ from .. Functions import image_functions
 from .. Functions import object_functions
 from .. Functions import visibility_functions
 from .. Functions import basic_functions
+from .. Functions import material_functions
 from .. Bake import bake_manager
 from .. Functions import constants
 
+
+class GTT_VerifyMaterialsOperator(bpy.types.Operator):
+    """Check for each visbile material if it has a PBR Shader so the GLTF Export works fine"""
+    bl_idname = "object.verify_materials"
+    bl_label = "Verify Materials"
+    
+    def execute(self, context):
+
+        C = context
+        D = bpy.data
+        O = bpy.ops
+
+        vis_mats = material_functions.get_all_visible_materials()
+       
+        for mat in vis_mats:
+            check_ok = node_functions.check_pbr(self,mat)
+            if not check_ok:
+                self.report({'INFO'}, "Check Material " + mat.name)
+
+        return {'FINISHED'}
 
 # ----------------------- LIGHTAP OPERATORS--------------------#
 class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
@@ -35,7 +56,7 @@ class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
 
         O.object.select_all(action='DESELECT')
         for obj in objects:
-            if obj.lightmap_name or obj.ao_map_name == bake_settings.lightmap_bakes:
+            if obj.lightmap_name == bake_settings.lightmap_bakes or obj.ao_map_name == bake_settings.lightmap_bakes:
                 C.view_layer.objects.active = obj
                 obj.select_set(True)
 
@@ -196,8 +217,13 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
 
         # ----------------------- PBR Texture --------------------#
         if bake_settings.pbr_nodes:
-            selected_objects = context.selected_objects            
-            bake_manager.bake_on_plane(self,selected_objects,bake_settings)
+            
+            if bake_settings.bake_all_materials:
+                vis_mats = material_functions.get_all_visible_materials()
+                for material in vis_mats:
+                    bake_manager.bake_on_plane(self,material,bake_settings)
+            else:
+                bake_manager.bake_on_plane(self,active_object.active_material,bake_settings)
 
         return {'FINISHED'}
 
@@ -215,14 +241,13 @@ class GTT_SwitchBakeMaterialOperator(bpy.types.Operator):
 
     def execute(self, context):
 
-        active_obj = context.object
         active_mat = context.object.active_material
 
         all_mats = bpy.data.materials
         mat_bake = all_mats.get(active_mat.name + "_Bake") 
         
         for obj in bpy.data.objects:
-            for slot in active_obj.material_slots:
+            for slot in obj.material_slots:
                 if mat_bake is not None and slot.material is active_mat:
                     slot.material = mat_bake
                 else:
@@ -242,7 +267,6 @@ class GTT_SwitchOrgMaterialOperator(bpy.types.Operator):
 
     def execute(self, context):
 
-        active_obj = context.object
         active_mat = context.object.active_material
 
         all_mats = bpy.data.materials
@@ -250,8 +274,10 @@ class GTT_SwitchOrgMaterialOperator(bpy.types.Operator):
         mat_org = all_mats.get(active_mat.name[0:index]) 
 
         for obj in bpy.data.objects:
-            for slot in active_obj.material_slots:
+            for slot in obj.material_slots:
                 mat = slot.material
+                if mat is None:
+                    continue
                 if mat_org is not None and mat_org.name in mat.name:
                     slot.material = mat_org
 
@@ -385,6 +411,7 @@ class GTT_RemoveLightmapOperator(bpy.types.Operator):
                 continue
             node_functions.remove_node(mat,bake_settings.texture_node_lightmap)
             node_functions.remove_node(mat,"Mulitply Lightmap")
+            node_functions.remove_node(mat,"Second_UV")
 
         #remove lightmap flag
         for obj in selected_objects:

@@ -50,6 +50,8 @@ class GTT_TEX_UL_List(bpy.types.UIList):
             [images.append(node.image.name) for node in tex_nodes]
         else:
             for mat in all_materials:
+                if mat is None:
+                    continue
                 nodes = mat.node_tree.nodes
                 tex_nodes = node_functions.get_node_by_type(nodes,constants.Node_Types.image_texture)
                 [images.append(node.image.name) for node in tex_nodes]

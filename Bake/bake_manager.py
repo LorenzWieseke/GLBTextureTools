@@ -19,16 +19,19 @@ def bake_texture(self, selected_objects, bake_settings):
     # -----------------------SETUP ENGINE--------------------#
     lightmap_utilities.setup_engine()
 
-    # -----------------------CANGE PREVIEW MODE --------------------#
+    # -----------------------SWITCH BACK TO SHOW ORG MATERIAL --------------------#
     bpy.ops.object.preview_bake_texture(connect=False)
+    
+    lightmap_utilities.create_bake_material("_bake")
 
     # -----------------------SETUP NODES--------------------#
     lightmap_utilities.add_node_setup()
     
+    
     # ----------------------- BAKING --------------------#
     if bake_settings.lightmap:
         # bpy.ops.material.clean_lightmap()
-        bpy.ops.object.preview_lightmap(connect=False)
+        visibility_functions.preview_lightmap(self,bpy.context)
         lightmap_utilities.save_metal_value()
         lightmap_utilities.bake(constants.Bake_Types.lightmap)
         lightmap_utilities.load_metal_value()
@@ -41,12 +44,12 @@ def bake_texture(self, selected_objects, bake_settings):
     return
 
 
-def bake_on_plane(self,selected_objects,bake_settings):
+def bake_on_plane(self,material,bake_settings):
 
     parent_operator = self
 
     # ----------------------- CREATE INSTANCE --------------------#
-    pbr_utilities = bake_utilities.PbrBakeUtilities(parent_operator,selected_objects,bake_settings)
+    pbr_utilities = bake_utilities.PbrBakeUtilities(parent_operator,material,bake_settings)
 
     # -----------------------TESTING--------------------#
     if not pbr_utilities.ready_for_bake():
@@ -60,9 +63,13 @@ def bake_on_plane(self,selected_objects,bake_settings):
 
     pbr_utilities.bake_pbr()
 
-    pbr_utilities.create_bake_material()
+    pbr_utilities.create_bake_material("_Bake")
+    
+    pbr_utilities.create_nodes_after_pbr_bake()
+    
+    if not bake_settings.bake_all_materials:
 
-    pbr_utilities.preview_bake_material()
+        pbr_utilities.preview_bake_material()
 
     pbr_utilities.cleanup_nodes()
 

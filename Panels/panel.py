@@ -63,8 +63,9 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
             if bake_settings.pbr_nodes:
                 row = box.row()
                 # col = row.collumn()
-                row.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
-                row.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
+                # row.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
+                # row.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
+                row.prop(scene.bake_settings, 'bake_all_materials', text="Bake all Materials")
 
             if bake_settings.lightmap or bake_settings.ao_map:
 
@@ -119,7 +120,7 @@ class GTT_VisibilityPanel(bpy.types.Panel):
 
         col = layout.column()
         row = col.row()
-        row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="PBR Material")
+        row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="Original Material")
         row.operator("object.switch_bake_mat_operator",icon = 'MATERIAL', text="PBR Baked Material")
 
         # row = col.row(align=True)

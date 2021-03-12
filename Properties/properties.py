@@ -56,6 +56,8 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
     lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
 
     lightmap_bakes: EnumProperty(name='Baked Textures',description='List of all the Baked Textures',items=gui_functions.update_bake_list)
+    
+    render_pass : EnumProperty(name='Render Pass',description='Define Render Pass',items=[("Combined","Combined","Bake all passes in this singel Combined Pass"),("Lightmap","Lightmap","Lightmap")])
    
     bake_image_name: StringProperty(default="Lightmap")
     bake_image_clear: BoolProperty(default= True)
@@ -65,6 +67,7 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
     unwrap: BoolProperty(default= True)
     denoise: BoolProperty(default=True)
     show_texture_after_bake: BoolProperty(default=True)
+    bake_all_materials: BoolProperty(default=False)
     bake_object_index:IntProperty(name = "Index for baked Objects", default = 0)
 
     uv_name="Lightmap"

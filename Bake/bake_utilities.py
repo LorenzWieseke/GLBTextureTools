@@ -28,14 +28,17 @@ class BakeUtilities():
         self.parent_operator = parent_operator
         self.render_engine = self.C.scene.render.engine
 
-        all_materials = set()
-        slots_array = [obj.material_slots for obj in selected_objects]
-        for slots in slots_array:
-            for slot in slots:
-                all_materials.add(slot.material)
-
         self.selected_objects = selected_objects
-        self.all_materials = all_materials
+
+        if self.selected_objects is not None:
+            all_materials = set()
+            slots_array = [obj.material_slots for obj in self.selected_objects]
+            for slots in slots_array:
+                for slot in slots:
+                    all_materials.add(slot.material)
+                
+            self.all_materials = all_materials
+            
         self.bake_settings = bake_settings
         self.baked_images = []
         self.image_texture_nodes = set()
@@ -312,24 +315,29 @@ class BakeUtilities():
 
 class PbrBakeUtilities(BakeUtilities):
     active_material = None
-    active_object = None
     parent_operator = None
 
-    def __init__(self,parent_operator, selected_objects, bake_settings):
-        super().__init__(parent_operator,selected_objects,bake_settings)
-        self.active_object = self.C.active_object
-        self.active_material = self.C.active_object.active_material
+    def __init__(self,parent_operator, material, bake_settings):
+        super().__init__(parent_operator,None,bake_settings)
+        self.active_material = material
+        self.active_object = bpy.context.active_object
         self.active_material.use_fake_user = True
         self.parent_operator = parent_operator
 
     def ready_for_bake(self):
+        # check if not baked material
+        if "_Bake" in self.active_material.name:
+            return
+        
+        print("\n Checking " + self.active_material.name + "\n")
         # check if renderer not set to optix
         if self.C.preferences.addons["cycles"].preferences.compute_device_type == "OPTIX":
             self.C.preferences.addons["cycles"].preferences.compute_device_type = "CUDA"
             self.parent_operator.report({'INFO'}, 'Changing Compute device to CUDA cause Baking in Optix not Supported')
         # check if pbr node exists
-        check_ok = node_functions.check_only_one_pbr(self.parent_operator,self.active_material) and node_functions.check_is_org_material(self.parent_operator,self.active_material)
+        check_ok = node_functions.check_pbr(self.parent_operator,self.active_material) and node_functions.check_is_org_material(self.parent_operator,self.active_material)
         if not check_ok :
+            self.parent_operator.report({'INFO'}, "Material " + self.active_material.name + " has errors !")
             return False
         return True
                      
@@ -339,7 +347,7 @@ class PbrBakeUtilities(BakeUtilities):
         visibility_functions.preview_bake_material()
 
     def cleanup_nodes(self):
-        bake_material = self.C.active_object.active_material
+        bake_material = self.active_material
         node_functions.remove_unused_nodes(bake_material)
 
     def add_bake_plane(self):
@@ -422,11 +430,11 @@ class PbrBakeUtilities(BakeUtilities):
         node_functions.remove_node(material,"PBR Bake")
         node_functions.reconnect_PBR(material, pbr_node)
 
-    def create_bake_material(self):
+    def create_bake_material(self,material_name_suffix):
 
         # -----------------------CREATE MATERIAL--------------------#
         org_material = self.active_material
-        bake_material_name = org_material.name + "_Bake"
+        bake_material_name = org_material.name + material_name_suffix
         bake_material = bpy.data.materials.get(bake_material_name)
 
         if bake_material is not None:
@@ -435,8 +443,12 @@ class PbrBakeUtilities(BakeUtilities):
         # and create new from org. material
         bake_material = org_material.copy()
         bake_material.name = bake_material_name
+        self.bake_material = bake_material
 
+    def create_nodes_after_pbr_bake(self):
         # -----------------------SETUP VARS--------------------#
+        org_material = self.active_material
+        bake_material = self.bake_material
         nodes = bake_material.node_tree.nodes
         pbr_node = node_functions.get_pbr_node(bake_material)        
         pbr_inputs = node_functions.get_pbr_inputs(pbr_node)

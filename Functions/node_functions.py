@@ -127,6 +127,7 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
     # set output image format
     file_extention = ""
     scene.render.image_settings.file_format = bpy.context.scene.img_file_format
+    scene.render.image_settings.quality = 100
     if bpy.context.scene.img_file_format == "JPEG":
         file_extention = "jpg"
     else:
@@ -144,8 +145,18 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
 # -----------------------CHECKING --------------------#
 
 
-def check_only_one_pbr(self, material):
+def check_pbr(self, material):
     check_ok = True
+    
+    if material is None:
+        return False
+    
+    if material.node_tree is None:
+        return False
+    
+    if material.node_tree.nodes is None:
+        return False
+   
     # get pbr shader
     nodes = material.node_tree.nodes
     pbr_node_type = constants.Node_Types.pbr_node
@@ -282,16 +293,15 @@ def emission_setup(material, node_output):
     make_link(material, node_output, emission_input)
 
     # link emission to materialOutput
-    surface_input = nodes.get("Material Output").inputs[0]
+    surface_input = get_node_by_type(nodes,constants.Node_Types.material_output)[0].inputs[0]
     emission_output = emission_node.outputs[0]
     make_link(material, emission_output, surface_input)
 
 
 def link_pbr_to_output(material, pbr_node):
     nodes = material.node_tree.nodes
-    surface_input = nodes.get("Material Output").inputs[0]
+    surface_input = get_node_by_type(nodes,constants.Node_Types.material_output)[0].inputs[0]
     make_link(material, pbr_node.outputs[0], surface_input)
-
 
 def reconnect_PBR(material, pbrNode):
     nodes = material.node_tree.nodes
