@@ -117,6 +117,40 @@ class BakeUtilities():
             self.O.uv.smart_project(island_margin=self.bake_settings.unwrap_margin)
             self.O.object.mode_set(mode='OBJECT')
 
+    def create_bake_material(self,material_name_suffix):
+        
+        bake_materials = []
+        # create new material for every slot on selcted objects
+        for material in self.all_materials:
+
+            org_material = material
+            
+            # is material already baked, continue
+            if material_name_suffix in org_material.name:
+                continue  
+
+            bake_material_name = org_material.name + material_name_suffix
+            
+            for i in range(1,10,1):               
+                if self.check_if_bake_material_exists(bake_material_name):
+                    bake_material_name += str(i)
+                else:
+                    continue
+          
+            bake_material = org_material.copy()
+            bake_material.name = bake_material_name
+            bake_materials.append(bake_material)
+  
+        visibility_functions.switch_baked_material(True)
+        self.all_materials = bake_materials
+
+    # material was baked before
+    def check_if_bake_material_exists(self,material_name):
+        bake_material = bpy.data.materials.get(material_name)
+        if bake_material is not None:
+            return True
+
+
     def add_gltf_settings_node(self, material):
         nodes = material.node_tree.nodes
          # create group data
@@ -344,7 +378,7 @@ class PbrBakeUtilities(BakeUtilities):
     def preview_bake_material(self):
         bpy.context.view_layer.objects.active = self.active_object
         self.active_object.select_set(True)
-        visibility_functions.preview_bake_material()
+        visibility_functions.switch_baked_material("_Bake")
 
     def cleanup_nodes(self):
         bake_material = self.active_material
@@ -430,7 +464,7 @@ class PbrBakeUtilities(BakeUtilities):
         node_functions.remove_node(material,"PBR Bake")
         node_functions.reconnect_PBR(material, pbr_node)
 
-    def create_bake_material(self,material_name_suffix):
+    def create_pbr_bake_material(self,material_name_suffix):
 
         # -----------------------CREATE MATERIAL--------------------#
         org_material = self.active_material

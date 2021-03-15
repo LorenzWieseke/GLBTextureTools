@@ -27,6 +27,19 @@ bpy.types.Scene.img_file_format = EnumProperty(
         ('PNG', 'PNG', 'Set image format to jpg'),
     ])
 
+bpy.types.Scene.affect = EnumProperty(
+    name='Affect',
+    description='Define if operator should run on active, selected, visible or all materials in scene.',
+    default='active',
+    items=[
+         ('active', 'ACTIVE', 'Change only active materials'),
+        ('selected', 'SELECTED', 'Change all selected materials'),
+        ('visible', 'VISIBLE', 'Change all visible materials'),
+        ('scene', 'SCENE', 'Change all materials in scene'),
+    ])
+
+
+
 class GTT_UV_Settings(bpy.types.PropertyGroup):
     uv_slot: IntProperty(default=1)
     uv_name: StringProperty(default="AO")
@@ -98,6 +111,10 @@ def run_help_operator(self,context):
     bpy.ops.scene.help('INVOKE_DEFAULT')
 
 bpy.types.Scene.help_tex_tools = BoolProperty(default=False,update=run_help_operator)
+
+# MATERIAL PROPERTIES
+bpy.types.Material.bake_material_name = StringProperty()
+
 
 # IMAGE PROPERTIES
 bpy.types.Image.org_filepath = StringProperty()

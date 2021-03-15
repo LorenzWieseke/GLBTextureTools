@@ -28,9 +28,11 @@ class GTT_VerifyMaterialsOperator(bpy.types.Operator):
         for mat in vis_mats:
             check_ok = node_functions.check_pbr(self,mat)
             if not check_ok:
-                self.report({'INFO'}, "Check Material " + mat.name)
+                self.report({'INFO'}, "No PBR Shader in " + mat.name)
 
         return {'FINISHED'}
+    
+
 
 # ----------------------- LIGHTAP OPERATORS--------------------#
 class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
@@ -47,11 +49,10 @@ class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
     def execute(self, context):
 
         C = context
-        D = bpy.data
         O = bpy.ops
 
         bake_settings = C.scene.bake_settings
-        objects = D.objects
+        objects = [ob for ob in bpy.context.view_layer.objects if ob.visible_get()]
         bake_settings.bake_image_name = bake_settings.lightmap_bakes
 
         O.object.select_all(action='DESELECT')
@@ -230,56 +231,26 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
 # ----------------------- VIEW OPERATORS--------------------#
 
 class GTT_SwitchBakeMaterialOperator(bpy.types.Operator):
-    """Click to switch to baked material"""
+    """Switch to baked material"""
     bl_idname = "object.switch_bake_mat_operator"
-    bl_label = "PBR Baked Material"
-
-    @classmethod
-    def poll(cls, context):
-        return (context.object is not None and context.object.type == 'MESH' and
-        context.object.active_material is not None and "_Bake" not in context.object.active_material.name)
+    bl_label = "Baked Material"
 
     def execute(self, context):
 
-        active_mat = context.object.active_material
-
-        all_mats = bpy.data.materials
-        mat_bake = all_mats.get(active_mat.name + "_Bake") 
+        show_bake_material = True
+        visibility_functions.switch_baked_material(show_bake_material)
         
-        for obj in bpy.data.objects:
-            for slot in obj.material_slots:
-                if mat_bake is not None and slot.material is active_mat:
-                    slot.material = mat_bake
-                else:
-                    self.report({'INFO'}, 'Bake PBR textures first')
-
         return {'FINISHED'}
 
 class GTT_SwitchOrgMaterialOperator(bpy.types.Operator):
-    """Click to switch to original material"""
+    """Switch from baked to original material"""
     bl_idname = "object.switch_org_mat_operator"
     bl_label = "Org. Material"
 
-    @classmethod
-    def poll(cls, context):
-        return (context.object is not None and context.object.type == 'MESH' and
-        context.object.active_material is not None and "_Bake" in context.object.active_material.name)
-
     def execute(self, context):
 
-        active_mat = context.object.active_material
-
-        all_mats = bpy.data.materials
-        index = active_mat.name.find("_Bake")
-        mat_org = all_mats.get(active_mat.name[0:index]) 
-
-        for obj in bpy.data.objects:
-            for slot in obj.material_slots:
-                mat = slot.material
-                if mat is None:
-                    continue
-                if mat_org is not None and mat_org.name in mat.name:
-                    slot.material = mat_org
+        show_bake_material = False
+        visibility_functions.switch_baked_material(show_bake_material)
 
         return {'FINISHED'}
 

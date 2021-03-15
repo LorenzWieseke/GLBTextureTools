@@ -120,11 +120,13 @@ class GTT_VisibilityPanel(bpy.types.Panel):
 
         col = layout.column()
         row = col.row()
-        row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="Original Material")
-        row.operator("object.switch_bake_mat_operator",icon = 'MATERIAL', text="PBR Baked Material")
+        row.prop(scene,"affect")
+        row = col.row()
+        row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="Show Original Material")
+        row.operator("object.switch_bake_mat_operator",icon = 'MATERIAL', text="Show Baked Material")
 
         # row = col.row(align=True)
-        layout.prop(scene.texture_settings,"preview_lightmap",text="Show without Lightmap" if scene.texture_settings.preview_lightmap else "Preview Lightmap", icon="SHADING_RENDERED" if scene.texture_settings.preview_bake_texture else "NODE_MATERIAL")
+        layout.prop(scene.texture_settings,"preview_lightmap",text="Show without Lightmap" if scene.texture_settings.preview_lightmap else "Preview Lightmap on Material", icon="SHADING_RENDERED" if scene.texture_settings.preview_bake_texture else "NODE_MATERIAL")
         layout.prop(scene.texture_settings,"preview_bake_texture", text="Show Material" if scene.texture_settings.preview_bake_texture else "Preview Baked Texture", icon="SHADING_RENDERED" if scene.texture_settings.preview_bake_texture else "NODE_MATERIAL")
     
  

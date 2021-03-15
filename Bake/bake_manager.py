@@ -10,6 +10,7 @@ def bake_texture(self, selected_objects, bake_settings):
     # ----------------------- CREATE INSTANCE --------------------#
     lightmap_utilities = bake_utilities.BakeUtilities(parent_operator, selected_objects, bake_settings)  
 
+    
     # -----------------------SET LIGHTMAP UV--------------------#
     lightmap_utilities.set_active_uv_to_lightmap()
     
@@ -22,12 +23,12 @@ def bake_texture(self, selected_objects, bake_settings):
     # -----------------------SWITCH BACK TO SHOW ORG MATERIAL --------------------#
     bpy.ops.object.preview_bake_texture(connect=False)
     
-    lightmap_utilities.create_bake_material("_bake")
-
+    # ----------------------- CREATE NEW MATERIAL FOR BAKING --------------------#
+    lightmap_utilities.create_bake_material("_AO")
+     
     # -----------------------SETUP NODES--------------------#
     lightmap_utilities.add_node_setup()
-    
-    
+        
     # ----------------------- BAKING --------------------#
     if bake_settings.lightmap:
         # bpy.ops.material.clean_lightmap()
@@ -63,13 +64,13 @@ def bake_on_plane(self,material,bake_settings):
 
     pbr_utilities.bake_pbr()
 
-    pbr_utilities.create_bake_material("_Bake")
+    pbr_utilities.create_pbr_bake_material("_Bake")
     
     pbr_utilities.create_nodes_after_pbr_bake()
     
     if not bake_settings.bake_all_materials:
-
-        pbr_utilities.preview_bake_material()
+        
+         pbr_utilities.preview_bake_material()
 
     pbr_utilities.cleanup_nodes()
 

@@ -7,9 +7,6 @@ def get_all_visible_materials():
         for slot in slots:
             vis_mat.add(slot.material)
 
-            
-    
-    # slots = [slot for slot in slot_array.material_slots]
     # to remove None values in list 
     vis_mat = list(filter(None, vis_mat)) 
     return vis_mat

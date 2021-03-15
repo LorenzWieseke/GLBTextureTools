@@ -16,22 +16,44 @@ def show_image_in_image_editor(image):
         if area.type == 'IMAGE_EDITOR':
             area.spaces.active.image = image
 
-
-def preview_bake_material():
-    C = bpy.context
-
-    # active_obj = C.active_object
-    active_mat = C.active_object.active_material
-
+def switch_baked_material(show_bake_material):
+    context = bpy.context
+    affect = context.scene.affect
+    # on what object to work
+    if affect == 'active':
+        objects = [bpy.context.active_object]
+    elif affect == 'selected':
+        objects = bpy.context.selected_editable_objects
+    elif affect == 'visible':
+        objects = [ob for ob in bpy.context.view_layer.objects if ob.visible_get()]
+    elif affect == 'scene':
+        objects = bpy.context.scene.objects
+     
+    # what type of bake map to switch to    
+    if context.scene.bake_settings.pbr_nodes:      
+        material_name_suffix = "_Bake"
+    if context.scene.bake_settings.ao_map:      
+        material_name_suffix = "_AO"
+        
     all_mats = bpy.data.materials
-    mat_bake = all_mats.get(active_mat.name + "_Bake")
+    baked_mats = [mat for mat in all_mats if material_name_suffix in mat.name]
 
-    for obj in bpy.data.objects:
-        for slot in obj.material_slots:
-            if mat_bake is not None and slot.material is active_mat:
-                slot.material = mat_bake
-
-
+    if show_bake_material:
+        for obj in objects:
+            for slot in obj.material_slots:
+                for baked_mat in baked_mats:
+                        if baked_mat.name == slot.material.name + material_name_suffix:
+                            slot.material = baked_mat
+                            
+    elif not show_bake_material:
+        for obj in objects:
+            for slot in obj.material_slots:
+                if (material_name_suffix in slot.material.name):
+                    bake_mat = slot.material 
+                    index = bake_mat.name.find(material_name_suffix)
+                    org_mat = all_mats.get(bake_mat.name[0:index]) 
+                    slot.material = org_mat
+ 
 def preview_bake_texture(self, context):
 
     bake_settings = context.scene.bake_settings

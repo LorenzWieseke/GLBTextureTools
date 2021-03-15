@@ -205,10 +205,11 @@ def get_pbr_inputs(pbr_node):
     roughness_input = pbr_node.inputs["Roughness"]
     normal_input = pbr_node.inputs["Normal"]
     emission_input = pbr_node.inputs["Emission"]
+    alpha_input = pbr_node.inputs["Alpha"]
 
     pbr_inputs = {"base_color_input": base_color_input, "metallic_input": metallic_input,
                   "specular_input": specular_input, "roughness_input": roughness_input, 
-                  "normal_input": normal_input, "emission_input": emission_input}
+                  "normal_input": normal_input, "emission_input": emission_input,"alpha_input":alpha_input}
     return pbr_inputs
 
 

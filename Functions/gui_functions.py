@@ -9,12 +9,12 @@ def update_pbr_button(self,context):
 def update_lightmap_button(self,context):
     self["pbr_nodes"] = False
     self["ao_map"] = False
-    object_functions.update_active_element_in_bake_list()
+    update_active_element_in_bake_list()
 
 def update_ao_button(self,context):
     self["lightmap"] = False
     self["pbr_nodes"] = False
-    object_functions.update_active_element_in_bake_list()
+    update_active_element_in_bake_list()
     
     
 # ----------------------- UPDATE BAKE IMAGE NAME / ENUM--------------------#    
@@ -61,8 +61,8 @@ def update_active_element_in_bake_list():
         bake_image_name = active_object.get("ao_map_name")
     if bake_image_name is None:
         bake_image_name = "New Name"
-    
-    if bake_image_name is not "":
+
+    if bake_image_name is not "" and bake_image_name is not "New Name":
         bake_settings.bake_image_name = bake_image_name
         bake_settings.lightmap_bakes = bake_image_name
     
