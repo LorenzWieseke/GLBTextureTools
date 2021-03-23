@@ -30,6 +30,11 @@ class GTT_VerifyMaterialsOperator(bpy.types.Operator):
             if not check_ok:
                 self.report({'INFO'}, "No PBR Shader in " + mat.name)
 
+        objects_in_scene = bpy.data.objects
+        for obj in objects_in_scene:
+            for slot in obj.material_slots:
+                if slot.material is None:
+                    self.report({'INFO'}, "Empty Material Slot on " + obj.name)
         return {'FINISHED'}
     
 
@@ -222,6 +227,7 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
             if bake_settings.bake_all_materials:
                 vis_mats = material_functions.get_all_visible_materials()
                 for material in vis_mats:
+
                     bake_manager.bake_on_plane(self,material,bake_settings)
             else:
                 bake_manager.bake_on_plane(self,active_object.active_material,bake_settings)
@@ -445,7 +451,7 @@ class GTT_CleanMaterialsOperator(bpy.types.Operator):
 class GTT_CleanUnusedImagesOperator(bpy.types.Operator):
     bl_idname = "scene.clean_unused_images"
     bl_label = "Clean Images"
-    bl_description = "Selecting all materials in scene that use the selected texture"
+    bl_description = "Clean all images from Hard Disk that are not used in scene"
     bl_options = {"REGISTER"}
 
     @classmethod

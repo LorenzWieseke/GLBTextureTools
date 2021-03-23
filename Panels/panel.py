@@ -150,7 +150,7 @@ class GTT_CleanupPanel(bpy.types.Panel):
         row.operator("material.clean_ao_map",text="Clean AO Map",icon = 'TRASH')
 
         row = layout.row()
-        row.operator("scene.clean_unused_images",text="Clean Unused Images",icon = 'TRASH')
+        # row.operator("scene.clean_unused_images",text="Clean Unused Images",icon = 'TRASH')
 
         
 class GTT_TextureSelectionPanel(bpy.types.Panel):

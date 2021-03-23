@@ -1,5 +1,6 @@
 import bpy
 from . import functions
+from .. Functions import material_functions
 
 
 def Diff(li1, li2):
@@ -28,6 +29,6 @@ class CleanDupliTexturesOperator(bpy.types.Operator):
 
         # images = bpy.data.images
         # compareImages(images)
-        functions.clean_empty_materials(self)
+        material_functions.clean_empty_materials(self)
 
         return {'FINISHED'}

@@ -10,3 +10,13 @@ def get_all_visible_materials():
     # to remove None values in list 
     vis_mat = list(filter(None, vis_mat)) 
     return vis_mat
+
+def clean_empty_materials(self):
+    for obj in bpy.data.objects:
+        for slot in obj.material_slots:
+            mat = slot.material
+            if mat is None:
+                print("Removed Empty Materials from " + obj.name)
+                bpy.ops.object.select_all(action='DESELECT')
+                obj.select_set(True)
+                bpy.ops.object.material_slot_remove()

@@ -368,6 +368,7 @@ class PbrBakeUtilities(BakeUtilities):
         if self.C.preferences.addons["cycles"].preferences.compute_device_type == "OPTIX":
             self.C.preferences.addons["cycles"].preferences.compute_device_type = "CUDA"
             self.parent_operator.report({'INFO'}, 'Changing Compute device to CUDA cause Baking in Optix not Supported')
+        
         # check if pbr node exists
         check_ok = node_functions.check_pbr(self.parent_operator,self.active_material) and node_functions.check_is_org_material(self.parent_operator,self.active_material)
         if not check_ok :

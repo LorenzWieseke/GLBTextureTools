@@ -184,16 +184,6 @@ def check_is_org_material(self, material):
     return check_ok
 
 
-def clean_empty_materials(self):
-    for obj in bpy.data.objects:
-        for slot in obj.material_slots:
-            mat = slot.material
-            if mat is None:
-                print("Removed Empty Materials from " + obj.name)
-                bpy.ops.object.select_all(action='DESELECT')
-                obj.select_set(True)
-                bpy.ops.object.material_slot_remove()
-
 # -----------------------NODES --------------------#
 
 
