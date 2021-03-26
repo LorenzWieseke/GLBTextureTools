@@ -37,7 +37,7 @@ class BakeUtilities():
                 for slot in slots:
                     all_materials.add(slot.material)
                 
-            self.all_materials = all_materials
+            self.selected_materials = all_materials
             
         self.bake_settings = bake_settings
         self.baked_images = []
@@ -118,10 +118,11 @@ class BakeUtilities():
             self.O.object.mode_set(mode='OBJECT')
 
     def create_bake_material(self,material_name_suffix):
-        
+
         bake_materials = []
+        new_material_name_suffix = material_name_suffix
         # create new material for every slot on selcted objects
-        for material in self.all_materials:
+        for material in self.selected_materials:
 
             org_material = material
             
@@ -134,6 +135,7 @@ class BakeUtilities():
             for i in range(1,10,1):               
                 if self.check_if_bake_material_exists(bake_material_name):
                     bake_material_name += str(i)
+                    new_material_name_suffix += str(i)
                 else:
                     continue
           
@@ -141,8 +143,9 @@ class BakeUtilities():
             bake_material.name = bake_material_name
             bake_materials.append(bake_material)
   
-        visibility_functions.switch_baked_material(True)
-        self.all_materials = bake_materials
+        visibility_functions.switch_baked_material(True,"selected",new_material_name_suffix)
+        if len(bake_materials) > 0:
+            self.selected_materials = bake_materials
 
     # material was baked before
     def check_if_bake_material_exists(self,material_name):
@@ -192,7 +195,7 @@ class BakeUtilities():
         return image_texture_node
 
     def save_metal_value(self):
-        for material in self.all_materials:
+        for material in self.selected_materials:
             nodes = material.node_tree.nodes
             pbr_node = node_functions.get_pbr_node(material)
             
@@ -209,7 +212,7 @@ class BakeUtilities():
                 node_functions.remove_link(material,metal_image_node.outputs[0],pbr_node.inputs["Metallic"])
 
     def load_metal_value(self):
-        for material in self.all_materials:
+        for material in self.selected_materials:
             nodes = material.node_tree.nodes
             pbr_node = node_functions.get_pbr_node(material)   
             pbr_node.inputs["Metallic"].default_value = pbr_node["original_metallic"]
@@ -243,7 +246,7 @@ class BakeUtilities():
         nodes.active = image_texture_node
 
     def add_node_setup(self):    
-        for material in self.all_materials:
+        for material in self.selected_materials:
             # AO
             if self.bake_settings.ao_map:
                 uv_node = self.add_uv_node(material)
@@ -361,7 +364,7 @@ class PbrBakeUtilities(BakeUtilities):
     def ready_for_bake(self):
         # check if not baked material
         if "_Bake" in self.active_material.name:
-            return
+            return False
         
         print("\n Checking " + self.active_material.name + "\n")
         # check if renderer not set to optix
@@ -379,7 +382,7 @@ class PbrBakeUtilities(BakeUtilities):
     def preview_bake_material(self):
         bpy.context.view_layer.objects.active = self.active_object
         self.active_object.select_set(True)
-        visibility_functions.switch_baked_material("_Bake")
+        visibility_functions.switch_baked_material(True,"selected")
 
     def cleanup_nodes(self):
         bake_material = self.active_material

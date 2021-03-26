@@ -15,10 +15,26 @@ def show_image_in_image_editor(image):
     for area in bpy.context.screen.areas:
         if area.type == 'IMAGE_EDITOR':
             area.spaces.active.image = image
-
-def switch_baked_material(show_bake_material):
+            
+            
+def switch_baked_material(*args):
     context = bpy.context
-    affect = context.scene.affect
+    
+    show_bake_material = args[0]
+    affect = args[1]
+    material_name_suffix = ""
+
+    
+    if len(args) == 2:
+        # what type of bake map to switch to    
+        if context.scene.bake_settings.pbr_nodes:      
+            material_name_suffix = "_Bake"
+        if context.scene.bake_settings.ao_map or context.scene.bake_settings.lightmap:       
+            material_name_suffix = "_AO"
+    
+    if len(args) == 3:
+        material_name_suffix = args[2]
+    
     # on what object to work
     if affect == 'active':
         objects = [bpy.context.active_object]
@@ -29,12 +45,7 @@ def switch_baked_material(show_bake_material):
     elif affect == 'scene':
         objects = bpy.context.scene.objects
      
-    # what type of bake map to switch to    
-    if context.scene.bake_settings.pbr_nodes:      
-        material_name_suffix = "_Bake"
-    if context.scene.bake_settings.ao_map:      
-        material_name_suffix = "_AO"
-        
+    
     all_mats = bpy.data.materials
     baked_mats = [mat for mat in all_mats if material_name_suffix in mat.name]
 
@@ -52,7 +63,8 @@ def switch_baked_material(show_bake_material):
                     bake_mat = slot.material 
                     index = bake_mat.name.find(material_name_suffix)
                     org_mat = all_mats.get(bake_mat.name[0:index]) 
-                    slot.material = org_mat
+                    if org_mat is not None:
+                        slot.material = org_mat
  
 def preview_bake_texture(self, context):
 

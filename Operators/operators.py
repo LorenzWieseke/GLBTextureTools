@@ -244,7 +244,7 @@ class GTT_SwitchBakeMaterialOperator(bpy.types.Operator):
     def execute(self, context):
 
         show_bake_material = True
-        visibility_functions.switch_baked_material(show_bake_material)
+        visibility_functions.switch_baked_material(show_bake_material,context.scene.affect)
         
         return {'FINISHED'}
 
@@ -256,7 +256,7 @@ class GTT_SwitchOrgMaterialOperator(bpy.types.Operator):
     def execute(self, context):
 
         show_bake_material = False
-        visibility_functions.switch_baked_material(show_bake_material)
+        visibility_functions.switch_baked_material(show_bake_material,context.scene.affect)
 
         return {'FINISHED'}
 
