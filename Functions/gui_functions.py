@@ -1,5 +1,6 @@
 import bpy
 from . import object_functions
+from bpy.app.handlers import persistent
 
 
 def update_pbr_button(self,context):
@@ -21,6 +22,7 @@ def update_ao_button(self,context):
     
 last_selection = []
 
+@persistent
 def update_on_selection(scene): 
     C = bpy.context
     global last_selection

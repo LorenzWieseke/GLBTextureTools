@@ -27,6 +27,7 @@ bl_info = {
 import bpy
 from .Functions import gui_functions
 
+
 from . import auto_load
 
 auto_load.init()
@@ -34,9 +35,10 @@ classes = auto_load.get_classes()
 
 def register():
     auto_load.register()
-    bpy.app.handlers.depsgraph_update_post.clear()
+    bpy.app.handlers.depsgraph_update_post.clear()    
     bpy.app.handlers.depsgraph_update_post.append(gui_functions.update_on_selection)
 
 
 def unregister():
     auto_load.unregister()
+
