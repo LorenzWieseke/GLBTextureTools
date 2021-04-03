@@ -21,7 +21,7 @@ def bake_texture(self, selected_objects, bake_settings):
     lightmap_utilities.setup_engine()
 
     # -----------------------SWITCH BACK TO SHOW ORG MATERIAL --------------------#
-    bpy.ops.object.preview_bake_texture(connect=False)
+    visibility_functions.preview_bake_texture(self,context=bpy.context)
     
     # ----------------------- CREATE NEW MATERIAL FOR BAKING --------------------#
     lightmap_utilities.create_bake_material("_AO")
@@ -45,33 +45,38 @@ def bake_texture(self, selected_objects, bake_settings):
     return
 
 
-def bake_on_plane(self,material,bake_settings):
+def bake_on_plane(self,selected_objects,bake_settings):
 
     parent_operator = self
-
-    # ----------------------- CREATE INSTANCE --------------------#
-    pbr_utilities = bake_utilities.PbrBakeUtilities(parent_operator,material,bake_settings)
-
-    # -----------------------TESTING--------------------#
-    if not pbr_utilities.ready_for_bake():
-        return
-    # -----------------------SETUP ENGINE--------------------#
-
-    pbr_utilities.setup_engine()
-
-    # -----------------------SETUP BAKE PLANE--------------------#
-    pbr_utilities.add_bake_plane()
-
-    pbr_utilities.bake_pbr()
-
-    pbr_utilities.create_pbr_bake_material("_Bake")
     
-    pbr_utilities.create_nodes_after_pbr_bake()
-    
-    if not bake_settings.bake_all_materials:
+    for active_object in selected_objects:
+
+        # ----------------------- CREATE INSTANCE --------------------#
+        pbr_utilities = bake_utilities.PbrBakeUtilities(parent_operator,active_object,bake_settings)
+
+        # -----------------------TESTING--------------------#
+        if not pbr_utilities.ready_for_bake():
+            return
+        # -----------------------SETUP ENGINE--------------------#
+
+        pbr_utilities.setup_engine()
+
+        # -----------------------SETUP BAKE PLANE--------------------#
         
-         pbr_utilities.preview_bake_material()
+        pbr_utilities.bake_materials_on_object()
+        
+        # pbr_utilities.add_bake_plane()
 
-    pbr_utilities.cleanup_nodes()
+        # pbr_utilities.bake_pbr()
+
+        # pbr_utilities.create_pbr_bake_material("_Bake")
+        
+        # pbr_utilities.create_nodes_after_pbr_bake()
+        
+        # if not bake_settings.bake_all_materials:
+            
+        #     pbr_utilities.preview_bake_material()
+
+        # pbr_utilities.cleanup_nodes()
 
     return

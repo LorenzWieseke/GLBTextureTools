@@ -4,7 +4,7 @@ from .. Functions import node_functions
 from .. Functions import image_functions
 from .. Functions import constants
 from .. Functions import visibility_functions
-from .. Functions import object_functions
+from .. Functions import material_functions
 
 
 class BakeUtilities():
@@ -27,18 +27,9 @@ class BakeUtilities():
         self.D = bpy.data
         self.parent_operator = parent_operator
         self.render_engine = self.C.scene.render.engine
-
         self.selected_objects = selected_objects
-
-        if self.selected_objects is not None:
-            all_materials = set()
-            slots_array = [obj.material_slots for obj in self.selected_objects]
-            for slots in slots_array:
-                for slot in slots:
-                    all_materials.add(slot.material)
-                
-            self.selected_materials = all_materials
-            
+        self.all_materials = self.D.materials
+        self.selected_materials = material_functions.get_selected_materials(self.selected_objects)
         self.bake_settings = bake_settings
         self.baked_images = []
         self.image_texture_nodes = set()
@@ -79,8 +70,6 @@ class BakeUtilities():
     def set_active_uv_to_lightmap(self):
         bpy.ops.object.set_active_uv(uv_slot=2)
 
-
-
     def unwrap_selected(self):
         if self.bake_settings.unwrap:
             self.O.object.add_uv(uv_name=self.bake_settings.uv_name)
@@ -120,38 +109,36 @@ class BakeUtilities():
     def create_bake_material(self,material_name_suffix):
 
         bake_materials = []
-        new_material_name_suffix = material_name_suffix
-        # create new material for every slot on selcted objects
-        for material in self.selected_materials:
-
-            org_material = material
-            
-            # is material already baked, continue
-            if material_name_suffix in org_material.name:
-                continue  
-
-            bake_material_name = org_material.name + material_name_suffix
-            
-            for i in range(1,10,1):               
-                if self.check_if_bake_material_exists(bake_material_name):
-                    bake_material_name += str(i)
-                    new_material_name_suffix += str(i)
-                else:
-                    continue
-          
-            bake_material = org_material.copy()
-            bake_material.name = bake_material_name
-            bake_materials.append(bake_material)
-  
-        visibility_functions.switch_baked_material(True,"selected",new_material_name_suffix)
-        if len(bake_materials) > 0:
-            self.selected_materials = bake_materials
-
-    # material was baked before
-    def check_if_bake_material_exists(self,material_name):
-        bake_material = bpy.data.materials.get(material_name)
-        if bake_material is not None:
-            return True
+        
+        for obj in self.selected_objects:   
+                           
+            for slot in obj.material_slots:
+                
+                org_material = slot.material            
+                   
+                # already baked
+                if material_name_suffix in org_material.name:
+                    return                
+                
+                # duplicate materials with more than 1 user
+                if org_material.users > 1:
+                    org_material = slot.material
+                    org_copy = org_material.copy()
+                    slot.material = org_copy
+              
+                
+                org_material = slot.material               
+                bake_material_name = org_material.name + material_name_suffix
+                
+                # try find baked mateial
+                bake_material = self.all_materials.get(bake_material_name)
+                if bake_material is None:
+                    bake_material = org_material.copy()
+                    bake_material.name = bake_material_name
+                    
+                slot.material = bake_material
+                bake_materials.append(bake_material)
+        self.selected_materials = bake_materials       
 
 
     def add_gltf_settings_node(self, material):
@@ -354,39 +341,41 @@ class PbrBakeUtilities(BakeUtilities):
     active_material = None
     parent_operator = None
 
-    def __init__(self,parent_operator, material, bake_settings):
-        super().__init__(parent_operator,None,bake_settings)
-        self.active_material = material
-        self.active_object = bpy.context.active_object
-        self.active_material.use_fake_user = True
+    def __init__(self,parent_operator, active_object, bake_settings):
+        super().__init__(parent_operator,[active_object],bake_settings)
+        self.active_object = active_object
+        self.selected_materials = material_functions.get_selected_materials([active_object])
         self.parent_operator = parent_operator
 
     def ready_for_bake(self):
-        # check if not baked material
-        if "_Bake" in self.active_material.name:
-            return False
-        
-        print("\n Checking " + self.active_material.name + "\n")
-        # check if renderer not set to optix
-        if self.C.preferences.addons["cycles"].preferences.compute_device_type == "OPTIX":
-            self.C.preferences.addons["cycles"].preferences.compute_device_type = "CUDA"
-            self.parent_operator.report({'INFO'}, 'Changing Compute device to CUDA cause Baking in Optix not Supported')
-        
-        # check if pbr node exists
-        check_ok = node_functions.check_pbr(self.parent_operator,self.active_material) and node_functions.check_is_org_material(self.parent_operator,self.active_material)
-        if not check_ok :
-            self.parent_operator.report({'INFO'}, "Material " + self.active_material.name + " has errors !")
-            return False
-        return True
+        for material in self.selected_materials:
+            # check if not baked material
+            if "_Bake" in material.name:
+                return False
+            
+            print("\n Checking " + material.name + "\n")
+            # check if renderer not set to optix
+            if self.C.preferences.addons["cycles"].preferences.compute_device_type == "OPTIX":
+                self.C.preferences.addons["cycles"].preferences.compute_device_type = "CUDA"
+                self.parent_operator.report({'INFO'}, 'Changing Compute device to CUDA cause Baking in Optix not Supported')
+            
+            # check if pbr node exists
+            check_ok = node_functions.check_pbr(self.parent_operator,material) and node_functions.check_is_org_material(self.parent_operator,material)
+            if not check_ok :
+                self.parent_operator.report({'INFO'}, "Material " + material.name + " has errors !")
+                return False
+            return True
                      
-    def preview_bake_material(self):
-        bpy.context.view_layer.objects.active = self.active_object
-        self.active_object.select_set(True)
-        visibility_functions.switch_baked_material(True,"selected")
-
-    def cleanup_nodes(self):
-        bake_material = self.active_material
-        node_functions.remove_unused_nodes(bake_material)
+    def bake_materials_on_object(self):
+        for material in self.selected_materials:  
+            self.active_material = material         
+            self.add_bake_plane()
+            self.bake_pbr()
+            self.create_pbr_bake_material("_Bake")
+            self.create_nodes_after_pbr_bake()      
+            self.cleanup_nodes()
+            
+        self.preview_bake_material() 
 
     def add_bake_plane(self):
         material = self.active_material
@@ -539,3 +528,11 @@ class PbrBakeUtilities(BakeUtilities):
         return bake_material
 
 
+    def preview_bake_material(self):
+        bpy.context.view_layer.objects.active = self.active_object
+        self.active_object.select_set(True)
+        visibility_functions.switch_baked_material(True,"selected","_Bake")
+
+    def cleanup_nodes(self):
+        bake_material = self.active_material
+        node_functions.remove_unused_nodes(bake_material)

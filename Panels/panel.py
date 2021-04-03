@@ -63,9 +63,9 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
             if bake_settings.pbr_nodes:
                 row = box.row()
                 # col = row.collumn()
-                # row.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
+                row.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
                 # row.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
-                row.prop(scene.bake_settings, 'bake_all_materials', text="Bake all Materials")
+                row.prop(scene.bake_settings, 'bake_all_materials', text="Bake all visible Materials")
 
             if bake_settings.lightmap or bake_settings.ao_map:
 

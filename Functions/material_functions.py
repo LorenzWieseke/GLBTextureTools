@@ -11,6 +11,14 @@ def get_all_visible_materials():
     vis_mat = list(filter(None, vis_mat)) 
     return vis_mat
 
+def get_selected_materials(selected_objects):
+    selected_materials = set()
+    slots_array = [obj.material_slots for obj in selected_objects]
+    for slots in slots_array:
+        for slot in slots:
+            selected_materials.add(slot.material)
+    return selected_materials
+
 def clean_empty_materials(self):
     for obj in bpy.data.objects:
         for slot in obj.material_slots:

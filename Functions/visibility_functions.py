@@ -1,6 +1,5 @@
 import bpy
 from . import node_functions
-from . import object_functions
 from . import material_functions
 from . import constants
 import mathutils
@@ -24,7 +23,7 @@ def switch_baked_material(*args):
     affect = args[1]
     material_name_suffix = ""
 
-    
+    # called without material_name_suffix
     if len(args) == 2:
         # what type of bake map to switch to    
         if context.scene.bake_settings.pbr_nodes:      
@@ -32,6 +31,7 @@ def switch_baked_material(*args):
         if context.scene.bake_settings.ao_map or context.scene.bake_settings.lightmap:       
             material_name_suffix = "_AO"
     
+    # called with material_name_suffix
     if len(args) == 3:
         material_name_suffix = args[2]
     
@@ -66,8 +66,8 @@ def switch_baked_material(*args):
                     if org_mat is not None:
                         slot.material = org_mat
  
-def preview_bake_texture(self, context):
-
+def preview_bake_texture(self,context):
+    context = bpy.context
     bake_settings = context.scene.bake_settings
     preview_bake_texture = context.scene.texture_settings.preview_bake_texture
     vis_mats = material_functions.get_all_visible_materials()

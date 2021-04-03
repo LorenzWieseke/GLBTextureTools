@@ -19,10 +19,6 @@ class GTT_VerifyMaterialsOperator(bpy.types.Operator):
     
     def execute(self, context):
 
-        C = context
-        D = bpy.data
-        O = bpy.ops
-
         vis_mats = material_functions.get_all_visible_materials()
        
         for mat in vis_mats:
@@ -179,9 +175,10 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if context.object is None:
+        if len(context.selected_objects) < 1:
             return False
-        return True
+        else:
+            return True
 
     def execute(self, context):
 
@@ -223,14 +220,7 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
 
         # ----------------------- PBR Texture --------------------#
         if bake_settings.pbr_nodes:
-            
-            if bake_settings.bake_all_materials:
-                vis_mats = material_functions.get_all_visible_materials()
-                for material in vis_mats:
-
-                    bake_manager.bake_on_plane(self,material,bake_settings)
-            else:
-                bake_manager.bake_on_plane(self,active_object.active_material,bake_settings)
+            bake_manager.bake_on_plane(self,selected_objects,bake_settings)
 
         return {'FINISHED'}
 
