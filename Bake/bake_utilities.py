@@ -59,13 +59,13 @@ class BakeUtilities():
 
         self.C.scene.render.resolution_percentage = 100
 
-        device = self.C.scene.cycles.device
-        if device != 'GPU':
-            try:
-                device = 'GPU'
-            except:
-                device = 'CPU'
-                print("GPU not Supported, leaving at CPU")
+        # device = self.C.scene.cycles.device
+        # if device != 'GPU':
+        #     try:
+        #         device = 'GPU'
+        #     except:
+        #         device = 'CPU'
+        #         print("GPU not Supported, leaving at CPU")
 
     def set_active_uv_to_lightmap(self):
         bpy.ops.object.set_active_uv(uv_slot=2)
@@ -135,9 +135,9 @@ class BakeUtilities():
                 if bake_material is None:
                     bake_material = org_material.copy()
                     bake_material.name = bake_material_name
+                    slot.material = bake_material
+                    bake_materials.append(bake_material)
                     
-                slot.material = bake_material
-                bake_materials.append(bake_material)
         self.selected_materials = bake_materials       
 
 
@@ -200,7 +200,6 @@ class BakeUtilities():
 
     def load_metal_value(self):
         for material in self.selected_materials:
-            nodes = material.node_tree.nodes
             pbr_node = node_functions.get_pbr_node(material)   
             pbr_node.inputs["Metallic"].default_value = pbr_node["original_metallic"]
 
@@ -341,41 +340,51 @@ class PbrBakeUtilities(BakeUtilities):
     active_material = None
     parent_operator = None
 
-    def __init__(self,parent_operator, active_object, bake_settings):
-        super().__init__(parent_operator,[active_object],bake_settings)
-        self.active_object = active_object
-        self.selected_materials = material_functions.get_selected_materials([active_object])
+    def __init__(self,parent_operator,selected_objects, bake_settings):
+        super().__init__(parent_operator,selected_objects,bake_settings)
+        self.selected_materials = material_functions.get_selected_materials(selected_objects)
         self.parent_operator = parent_operator
 
-    def ready_for_bake(self):
-        for material in self.selected_materials:
-            # check if not baked material
-            if "_Bake" in material.name:
-                return False
+    def ready_for_bake(self,material):
+
+        # check if not baked material
+        if "_Bake" in material.name:
+            print("Skipping cause already baked : " + material.name)
+            return False
+        
+        print("\n Checking " + material.name + "\n")
+        # check if renderer not set to optix
+        if self.C.preferences.addons["cycles"].preferences.compute_device_type == "OPTIX":
+            self.C.preferences.addons["cycles"].preferences.compute_device_type = "CUDA"
+            self.parent_operator.report({'INFO'}, 'Changing Compute device to CUDA cause Baking in Optix not Supported')
+        
+        # check if pbr node exists
+        check_ok = node_functions.check_pbr(self.parent_operator,material) and node_functions.check_is_org_material(self.parent_operator,material)
+        if not check_ok :
+            self.parent_operator.report({'INFO'}, "Material " + material.name + " has errors !")
+            return False
+        
+        # copy texture nodes if they are linked multiple times
+        nodes = material.node_tree.nodes
+        image_textrure_nodes = node_functions.get_nodes_by_type(nodes,constants.Node_Types.image_texture)
+        for image_texture_node in image_textrure_nodes:
+            node_functions.remove_double_linking(material,image_texture_node)
+        return True        
+
             
-            print("\n Checking " + material.name + "\n")
-            # check if renderer not set to optix
-            if self.C.preferences.addons["cycles"].preferences.compute_device_type == "OPTIX":
-                self.C.preferences.addons["cycles"].preferences.compute_device_type = "CUDA"
-                self.parent_operator.report({'INFO'}, 'Changing Compute device to CUDA cause Baking in Optix not Supported')
-            
-            # check if pbr node exists
-            check_ok = node_functions.check_pbr(self.parent_operator,material) and node_functions.check_is_org_material(self.parent_operator,material)
-            if not check_ok :
-                self.parent_operator.report({'INFO'}, "Material " + material.name + " has errors !")
-                return False
-            return True
                      
     def bake_materials_on_object(self):
         for material in self.selected_materials:  
-            self.active_material = material         
+            self.active_material = material       
+            if not (self.ready_for_bake(material)):
+                  continue
             self.add_bake_plane()
             self.bake_pbr()
             self.create_pbr_bake_material("_Bake")
             self.create_nodes_after_pbr_bake()      
             self.cleanup_nodes()
             
-        self.preview_bake_material() 
+        visibility_functions.switch_baked_material(True,"visible","_Bake")
 
     def add_bake_plane(self):
         material = self.active_material
@@ -407,12 +416,6 @@ class PbrBakeUtilities(BakeUtilities):
             # -----------------------TESTING--------------------#
             # skip if input has no connection
             if not pbr_input.is_linked:
-                continue
-
-            # skip if input has only texture node attached
-            texture_node = pbr_input.links[0].from_node
-            if texture_node.type == constants.Node_Types.image_texture:
-                texture_node.image.org_image_name = texture_node.image.name
                 continue
 
             # -----------------------IMAGE --------------------#
@@ -525,13 +528,8 @@ class PbrBakeUtilities(BakeUtilities):
             if pbr_input is not pbr_inputs["base_color_input"]:
                 tex_node.image.colorspace_settings.name = "Non-Color"
 
+            self.active_material = bake_material
         return bake_material
-
-
-    def preview_bake_material(self):
-        bpy.context.view_layer.objects.active = self.active_object
-        self.active_object.select_set(True)
-        visibility_functions.switch_baked_material(True,"selected","_Bake")
 
     def cleanup_nodes(self):
         bake_material = self.active_material

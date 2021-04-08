@@ -160,7 +160,7 @@ def check_pbr(self, material):
     # get pbr shader
     nodes = material.node_tree.nodes
     pbr_node_type = constants.Node_Types.pbr_node
-    pbr_nodes = get_node_by_type(nodes, pbr_node_type)
+    pbr_nodes = get_nodes_by_type(nodes, pbr_node_type)
 
     # check only one pbr node
     if len(pbr_nodes) == 0:
@@ -203,7 +203,7 @@ def get_pbr_inputs(pbr_node):
     return pbr_inputs
 
 
-def get_node_by_type(nodes, node_type):
+def get_nodes_by_type(nodes, node_type):
     nodes_found = [n for n in nodes if n.type == node_type]
     return nodes_found
 
@@ -233,7 +233,7 @@ def get_node_by_name_recusivly(node, idname):
 
 def get_pbr_node(material):
     nodes = material.node_tree.nodes
-    pbr_node = get_node_by_type(nodes, constants.Node_Types.pbr_node)
+    pbr_node = get_nodes_by_type(nodes, constants.Node_Types.pbr_node)
     if len(pbr_node) > 0:
         return pbr_node[0]
 
@@ -284,20 +284,20 @@ def emission_setup(material, node_output):
     make_link(material, node_output, emission_input)
 
     # link emission to materialOutput
-    surface_input = get_node_by_type(nodes,constants.Node_Types.material_output)[0].inputs[0]
+    surface_input = get_nodes_by_type(nodes,constants.Node_Types.material_output)[0].inputs[0]
     emission_output = emission_node.outputs[0]
     make_link(material, emission_output, surface_input)
 
 
 def link_pbr_to_output(material, pbr_node):
     nodes = material.node_tree.nodes
-    surface_input = get_node_by_type(nodes,constants.Node_Types.material_output)[0].inputs[0]
+    surface_input = get_nodes_by_type(nodes,constants.Node_Types.material_output)[0].inputs[0]
     make_link(material, pbr_node.outputs[0], surface_input)
 
 def reconnect_PBR(material, pbrNode):
     nodes = material.node_tree.nodes
     pbr_output = pbrNode.outputs[0]
-    surface_input = get_node_by_type(
+    surface_input = get_nodes_by_type(
         nodes, constants.Node_Types.material_output)[0].inputs[0]
     make_link(material, pbr_output, surface_input)
 
@@ -348,6 +348,33 @@ def remove_unused_nodes(material):
     for node in unconnected_nodes:
         nodes.remove(node)
     # print(connected_nodes)
+
+def remove_double_linking(material,texture_node):
+    color_output = texture_node.outputs["Color"]
+    links_cout = len(color_output.links)
+    org_vector_input = texture_node.inputs["Vector"]
+    # print(len(color_output.links))
+    if links_cout > 1:
+        for i in range(0,links_cout):
+            # skip first
+            if (i == 0):
+                continue
+            
+            new_texture_node = add_node(material,constants.Shader_Node_Types.image_texture,texture_node.name + "Copy")
+            new_texture_node.image = texture_node.image
+            new_texture_node.location = texture_node.location
+            new_texture_node.location.y -= 250
+        
+            # relink tex node output
+            linked_node_socket = color_output.links[i].to_socket
+            make_link(material,new_texture_node.outputs["Color"],linked_node_socket)
+            
+            # relink tex node output
+            if len(org_vector_input.links) is not 0:
+                new_vector_input = new_texture_node.inputs["Vector"]
+                tex_transform_socket = org_vector_input.links[0].from_socket
+                make_link(material,tex_transform_socket,new_vector_input)
+            
 
 
 def get_all_connected_nodes(node, connected_nodes):

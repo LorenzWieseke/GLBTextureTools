@@ -46,14 +46,14 @@ class GTT_TEX_UL_List(bpy.types.UIList):
         if texture_settings.show_per_material:
             mat = context.active_object.active_material
             nodes = mat.node_tree.nodes
-            tex_nodes = node_functions.get_node_by_type(nodes,constants.Node_Types.image_texture)
+            tex_nodes = node_functions.get_nodes_by_type(nodes,constants.Node_Types.image_texture)
             [images.append(node.image.name) for node in tex_nodes]
         else:
             for mat in all_materials:
                 if mat is None:
                     continue
                 nodes = mat.node_tree.nodes
-                tex_nodes = node_functions.get_node_by_type(nodes,constants.Node_Types.image_texture)
+                tex_nodes = node_functions.get_nodes_by_type(nodes,constants.Node_Types.image_texture)
                 [images.append(node.image.name) for node in tex_nodes]
         
         # save filtered list to texture settings / ui_list_itmes

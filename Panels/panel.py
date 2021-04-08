@@ -7,7 +7,7 @@ from .. Functions import gui_functions
               
 class GTT_ResolutionPanel(bpy.types.Panel):
     bl_idname = "GLBTEXTOOLS_PT_resolution_panel"
-    bl_label = "Output Resolution"
+    bl_label = "Global Settings"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = 'GLB Texture Tools'
@@ -21,8 +21,8 @@ class GTT_ResolutionPanel(bpy.types.Panel):
         box = layout.box()
         column = box.column()
         column.prop(scene, "img_bake_size")
-
         column.prop(scene,"img_file_format")
+        column.prop(scene,"affect")
  
 
 class GTT_BakeTexturePanel(bpy.types.Panel):
@@ -65,7 +65,7 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
                 # col = row.collumn()
                 row.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
                 # row.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
-                row.prop(scene.bake_settings, 'bake_all_materials', text="Bake all visible Materials")
+
 
             if bake_settings.lightmap or bake_settings.ao_map:
 
@@ -118,9 +118,7 @@ class GTT_VisibilityPanel(bpy.types.Panel):
         layout = self.layout
         scene = context.scene
 
-        col = layout.column()
-        row = col.row()
-        row.prop(scene,"affect")
+        col = layout.column()       
         row = col.row()
         row.operator("object.switch_org_mat_operator",icon = 'NODE_MATERIAL', text="Show Original Material")
         row.operator("object.switch_bake_mat_operator",icon = 'MATERIAL', text="Show Baked Material")

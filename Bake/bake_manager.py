@@ -49,34 +49,16 @@ def bake_on_plane(self,selected_objects,bake_settings):
 
     parent_operator = self
     
-    for active_object in selected_objects:
+    # ----------------------- CREATE INSTANCE --------------------#
+    pbr_utilities = bake_utilities.PbrBakeUtilities(parent_operator,selected_objects,bake_settings)
 
-        # ----------------------- CREATE INSTANCE --------------------#
-        pbr_utilities = bake_utilities.PbrBakeUtilities(parent_operator,active_object,bake_settings)
+    # -----------------------SETUP ENGINE--------------------#
 
-        # -----------------------TESTING--------------------#
-        if not pbr_utilities.ready_for_bake():
-            return
-        # -----------------------SETUP ENGINE--------------------#
+    pbr_utilities.setup_engine()
 
-        pbr_utilities.setup_engine()
+    # ----------------------- BAKE --------------------#
 
-        # -----------------------SETUP BAKE PLANE--------------------#
+    pbr_utilities.bake_materials_on_object()
         
-        pbr_utilities.bake_materials_on_object()
-        
-        # pbr_utilities.add_bake_plane()
-
-        # pbr_utilities.bake_pbr()
-
-        # pbr_utilities.create_pbr_bake_material("_Bake")
-        
-        # pbr_utilities.create_nodes_after_pbr_bake()
-        
-        # if not bake_settings.bake_all_materials:
-            
-        #     pbr_utilities.preview_bake_material()
-
-        # pbr_utilities.cleanup_nodes()
 
     return

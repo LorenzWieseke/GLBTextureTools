@@ -105,7 +105,7 @@ class GTT_GetMaterialByTextureOperator(bpy.types.Operator):
         for mat in materials:
             nodes = mat.node_tree.nodes
             tex_node_type = constants.Node_Types.image_texture
-            tex_nodes = node_functions.get_node_by_type(nodes,tex_node_type)
+            tex_nodes = node_functions.get_nodes_by_type(nodes,tex_node_type)
             
             # if texture node in current node tree
             if len(tex_nodes) > 0:

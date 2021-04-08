@@ -88,7 +88,7 @@ def preview_bake_texture(self,context):
             if preview_bake_texture:
                 node_functions.emission_setup(mat, bake_texture_node.outputs["Color"])
             else:
-                pbr_node = node_functions.get_node_by_type(nodes, constants.Node_Types.pbr_node)
+                pbr_node = node_functions.get_nodes_by_type(nodes, constants.Node_Types.pbr_node)
                 if len(pbr_node) == 0:
                     return
                 

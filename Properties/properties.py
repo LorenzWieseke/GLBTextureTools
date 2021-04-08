@@ -21,7 +21,7 @@ bpy.types.Scene.img_bake_size = EnumProperty(
 bpy.types.Scene.img_file_format = EnumProperty(
     name='File Format',
     description='Set file format for output image',
-    default='PNG',
+    default='JPEG',
     items=[
          ('JPEG', 'JPEG', 'Set image format to jpg'),
         ('PNG', 'PNG', 'Set image format to jpg'),
@@ -80,7 +80,6 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
     unwrap: BoolProperty(default= True)
     denoise: BoolProperty(default=True)
     show_texture_after_bake: BoolProperty(default=True)
-    bake_all_materials: BoolProperty(default=False)
     bake_object_index:IntProperty(name = "Index for baked Objects", default = 0)
 
     uv_name="Lightmap"

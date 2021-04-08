@@ -59,14 +59,16 @@ def update_active_element_in_bake_list():
     
     if bake_settings.lightmap:
         bake_image_name = active_object.get("lightmap_name")
+        if bake_image_name is None:
+            bake_image_name = "Lightmap " + active_object.name
     if bake_settings.ao_map:
         bake_image_name = active_object.get("ao_map_name")
-    if bake_image_name is None:
-        bake_image_name = "New Name"
+        if bake_image_name is None:
+            bake_image_name = "AO " + active_object.name
 
-    if bake_image_name is not "" and bake_image_name is not "New Name":
-        bake_settings.bake_image_name = bake_image_name
-        bake_settings.lightmap_bakes = bake_image_name
+    # if bake_image_name is not "" and bake_image_name is not "New Name":
+    #     bake_settings.bake_image_name = bake_image_name
+    #     bake_settings.lightmap_bakes = bake_image_name
     
 
 def headline(layout,*valueList):
