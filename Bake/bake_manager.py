@@ -32,7 +32,6 @@ def bake_texture(self, selected_objects, bake_settings):
     # ----------------------- BAKING --------------------#
     if bake_settings.lightmap:
         # bpy.ops.material.clean_lightmap()
-        visibility_functions.preview_lightmap(self,bpy.context)
         lightmap_utilities.save_metal_value()
         lightmap_utilities.bake(constants.Bake_Types.lightmap)
         lightmap_utilities.load_metal_value()

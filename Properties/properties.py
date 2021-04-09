@@ -1,12 +1,13 @@
 import bpy
+from bpy import context
 from bpy.props import *
 from .. Functions import gui_functions
 from .. Functions import visibility_functions
 
 
 bpy.types.Scene.img_bake_size = EnumProperty(
-    name='Size',
-    description='Set Resolution for Baking',
+    name='Image Size',
+    description='Set resolution for baking and scaling images. This effects PBR, AO and Lightmap baking as well as scaling imges. As of scaling images, choose ORIGINAL to switch back to your image before scaling.',
     default='1024',
     items=[
          ('128', '128', 'Set image size to 128'),
@@ -15,7 +16,7 @@ bpy.types.Scene.img_bake_size = EnumProperty(
         ('1024', '1024', 'Set image size to 1024'),
         ('2048', '2048', 'Set image size to 2048'),
         ('4096', '4096', 'Set image size to 4096'),
-        ('0', 'Original', 'Set image back to original File'),
+        ('0', 'Original', 'Set image back to original file'),
     ])
 
 bpy.types.Scene.img_file_format = EnumProperty(
@@ -56,9 +57,12 @@ class GTT_Cleanup_Settings(bpy.types.PropertyGroup):
 bpy.utils.register_class(GTT_Cleanup_Settings)
 bpy.types.Scene.cleanup_settings = PointerProperty(type=GTT_Cleanup_Settings)
 
+
 class GTT_Bake_Settings(bpy.types.PropertyGroup):  
     open_bake_settings_menu: BoolProperty(default = False)    
     open_object_bake_list_menu: BoolProperty(default = False)    
+    
+    # Type of bake
     pbr_nodes: BoolProperty(default = True,update=gui_functions.update_pbr_button)
     pbr_samples: IntProperty(name = "Samples for PBR bake", default = 1)
     
@@ -67,16 +71,21 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
 
     lightmap: BoolProperty(default = False,update=gui_functions.update_lightmap_button)
     lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
-
-    lightmap_bakes: EnumProperty(name='Baked Textures',description='List of all the Baked Textures',items=gui_functions.update_bake_list)
     
-    render_pass : EnumProperty(name='Render Pass',description='Define Render Pass',items=[("Combined","Combined","Bake all passes in this singel Combined Pass"),("Lightmap","Lightmap","Lightmap")])
+    baked_lightmaps_enum: EnumProperty(name='Baked Textures',description='List of all the Baked Textures',items=gui_functions.update_bake_list)
+
+    
+    def get_baked_lightmaps(context):
+        return gui_functions.update_bake_list(context,context)
+
+    # render_pass : EnumProperty(name='Render Pass',description='Define Render Pass',items=[("Combined","Combined","Bake all passes in this singel Combined Pass"),("Lightmap","Lightmap","Lightmap")])
    
+    # Checkbox settings
     bake_image_name: StringProperty(default="Lightmap")
     bake_image_clear: BoolProperty(default= True)
     mute_texture_nodes: BoolProperty(default = True)
     bake_margin:IntProperty(default=2)
-    unwrap_margin:FloatProperty(default=0.08)
+    unwrap_margin:FloatProperty(default=0.002)
     unwrap: BoolProperty(default= True)
     denoise: BoolProperty(default=True)
     show_texture_after_bake: BoolProperty(default=True)
@@ -90,7 +99,6 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
 
 bpy.utils.register_class(GTT_Bake_Settings)
 bpy.types.Scene.bake_settings = PointerProperty(type=GTT_Bake_Settings)
-
 class GTT_Texture_Settings(bpy.types.PropertyGroup):
     open_texture_settings_menu:BoolProperty(default=False)
     open_sel_mat_menu:BoolProperty(default=False)

@@ -1,6 +1,4 @@
 import bpy
-import os
-from . import panel_ui_list
 from .. Functions import gui_functions
 # from .. Update import addon_updater_ops
 
@@ -72,7 +70,7 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
                 row = box.row()
                 row.prop(scene.bake_settings, 'bake_image_name',  text="")
                 row = box.row()
-                row.prop(scene.bake_settings, 'lightmap_bakes',text="") 
+                row.prop(scene.bake_settings, 'baked_lightmaps_enum',text="") 
                 row.operator("object.select_lightmap_objects",text="",icon="RESTRICT_SELECT_OFF")
 
                 if bake_settings.lightmap:
@@ -92,9 +90,10 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
                 col = split.column(align=True)
                 col.prop(scene.bake_settings, 'denoise', text="Denoise")
                 col.prop(scene.bake_settings, 'show_texture_after_bake', text="Show Texture after Bake")
-            
-        row = layout.row()
-        row.prop(scene.bake_settings, 'open_object_bake_list_menu', text="Lightmapped Objects", icon = 'TRIA_DOWN' if bake_settings.open_object_bake_list_menu else 'TRIA_RIGHT' )
+          
+        # LIGHTMAPPED OBJECT LIST
+        # row = layout.row()
+        # row.prop(scene.bake_settings, 'open_object_bake_list_menu', text="Lightmapped Objects", icon = 'TRIA_DOWN' if bake_settings.open_object_bake_list_menu else 'TRIA_RIGHT' )
         
         # BAKE LIST
         if bake_settings.open_object_bake_list_menu:

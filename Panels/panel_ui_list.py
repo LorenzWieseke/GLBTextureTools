@@ -81,7 +81,7 @@ class GTT_BAKE_IMAGE_UL_List(bpy.types.UIList):
         flt_flags = []
         flt_neworder = []
 
-        flt_flags = [self.bitflag_filter_item if obj.lightmap_name == bake_settings.lightmap_bakes and obj.hasLightmap else 0 for obj in objects]
+        flt_flags = [self.bitflag_filter_item if obj.lightmap_name == bake_settings.baked_lightmaps_enum and obj.hasLightmap else 0 for obj in objects]
 
         return flt_flags, flt_neworder
             

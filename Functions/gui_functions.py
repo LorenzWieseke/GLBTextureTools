@@ -1,4 +1,5 @@
 import bpy
+from bpy import context
 from . import object_functions
 from bpy.app.handlers import persistent
 
@@ -33,7 +34,7 @@ def update_on_selection(scene):
         last_selection = C.selected_objects
         update_active_element_in_bake_list()
 
-def update_bake_list(bake_settings, context):
+def update_bake_list(bake_settings,context):
     
     bake_textures_set = set()
 
@@ -55,21 +56,26 @@ def update_active_element_in_bake_list():
     C = bpy.context
     active_object = C.active_object
     bake_settings = C.scene.bake_settings
-    bake_image_name = ""
+    new_bake_image_name = ""
     
     if bake_settings.lightmap:
-        bake_image_name = active_object.get("lightmap_name")
-        if bake_image_name is None:
-            bake_image_name = "Lightmap " + active_object.name
+        new_bake_image_name = active_object.get("lightmap_name")
+        if new_bake_image_name is None:
+            new_bake_image_name = "Lightmap " + active_object.name
     if bake_settings.ao_map:
-        bake_image_name = active_object.get("ao_map_name")
-        if bake_image_name is None:
-            bake_image_name = "AO " + active_object.name
-
-    # if bake_image_name is not "" and bake_image_name is not "New Name":
-    #     bake_settings.bake_image_name = bake_image_name
-    #     bake_settings.lightmap_bakes = bake_image_name
-    
+        new_bake_image_name = active_object.get("ao_map_name")
+        if new_bake_image_name is None:
+            new_bake_image_name = "AO " + active_object.name
+            
+    enum_items = bake_settings.get_baked_lightmaps()
+    keys = [key[0] for key in enum_items]
+    if new_bake_image_name in keys:
+        bake_settings.bake_image_name = new_bake_image_name
+        bake_settings.baked_lightmaps_enum = new_bake_image_name
+    else:
+        if active_object.type == "MESH":
+            bake_settings.bake_image_name = new_bake_image_name
+   
 
 def headline(layout,*valueList):
     box = layout.box()

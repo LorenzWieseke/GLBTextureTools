@@ -43,7 +43,7 @@ class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        if context.scene.bake_settings.lightmap_bakes == '':
+        if context.scene.bake_settings.baked_lightmaps_enum == '':
             return False
         return True
 
@@ -54,11 +54,11 @@ class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
 
         bake_settings = C.scene.bake_settings
         objects = [ob for ob in bpy.context.view_layer.objects if ob.visible_get()]
-        bake_settings.bake_image_name = bake_settings.lightmap_bakes
+        bake_settings.bake_image_name = bake_settings.baked_lightmaps_enum
 
         O.object.select_all(action='DESELECT')
         for obj in objects:
-            if obj.lightmap_name == bake_settings.lightmap_bakes or obj.ao_map_name == bake_settings.lightmap_bakes:
+            if obj.lightmap_name == bake_settings.baked_lightmaps_enum or obj.ao_map_name == bake_settings.baked_lightmaps_enum:
                 C.view_layer.objects.active = obj
                 obj.select_set(True)
 
