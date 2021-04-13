@@ -81,6 +81,10 @@ def scale_image(image, new_size):
 
     image.org_filepath = image.filepath
 
+    if new_size[0] > image.size[0] or new_size[1] > image.size[1]:
+        new_size[0] = image.size[0]
+        new_size[1] = image.size[1]
+
     # set image back to original if size is 0, else scale it
     if new_size[0] == 0:
         image.filepath_raw = image.org_filepath
