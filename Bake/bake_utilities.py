@@ -48,7 +48,7 @@ class BakeUtilities():
         self.cycles_device_type = self.C.preferences.addons['cycles'].preferences.compute_device_type
         if self.cycles_device_type == 'OPTIX':
             self.C.preferences.addons['cycles'].preferences.compute_device_type = 'CUDA'
-        
+
         # setup samples
         if self.bake_settings.pbr_nodes:
             self.C.scene.cycles.samples = self.bake_settings.pbr_samples
@@ -57,15 +57,7 @@ class BakeUtilities():
         if self.bake_settings.ao_map:
             self.C.scene.cycles.samples = self.bake_settings.ao_samples
 
-        self.C.scene.render.resolution_percentage = 100
-
-        # device = self.C.scene.cycles.device
-        # if device != 'GPU':
-        #     try:
-        #         device = 'GPU'
-        #     except:
-        #         device = 'CPU'
-        #         print("GPU not Supported, leaving at CPU")
+        self.C.scene.render.resolution_percentage = 100        
 
     def set_active_uv_to_lightmap(self):
         bpy.ops.object.set_active_uv(uv_slot=2)
@@ -356,11 +348,10 @@ class PbrBakeUtilities(BakeUtilities):
             return False
         
         print("\n Checking " + material.name + "\n")
-        # check if renderer not set to optix
-        if self.C.preferences.addons["cycles"].preferences.compute_device_type == "OPTIX":
-            self.C.preferences.addons["cycles"].preferences.compute_device_type = "CUDA"
-            self.parent_operator.report({'INFO'}, 'Changing Compute device to CUDA cause Baking in Optix not Supported')
         
+        # check if renderer not set to optix
+        self.setup_engine()
+
         # check if pbr node exists
         check_ok = node_functions.check_pbr(self.parent_operator,material) and node_functions.check_is_org_material(self.parent_operator,material)
         if not check_ok :

@@ -21,7 +21,7 @@ class GTT_ResolutionPanel(bpy.types.Panel):
         column.prop(scene, "img_bake_size")
         column.prop(scene,"img_file_format")
         column.prop(scene,"affect")
- 
+        column.prop(scene.cycles,"device")
 
 class GTT_BakeTexturePanel(bpy.types.Panel):
     bl_idname = "GLBTEXTOOLS_PT_bake_panel"
