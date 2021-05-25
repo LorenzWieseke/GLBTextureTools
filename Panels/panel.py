@@ -249,8 +249,9 @@ class GTT_HelpPanel(bpy.types.Panel):
 
 		# # call built-in function with draw code/checks
         # addon_updater_ops.update_notice_box_ui(self, context)
-        
-        layout.prop(scene,"help_tex_tools",text="Help",icon = 'HELP')
+        layout.label(text="Find out how to use this addon")
+        layout.operator("scene.open_link",text="Add-on Documentation",icon='HELP').url = "https://govie.de/tutorials-blender/?utm_source=blender-add-on&utm_medium=button#glb_texture_tools"
+        # layout.prop(scene,"help_tex_tools",text="Help",icon = 'HELP')
 
 
         
