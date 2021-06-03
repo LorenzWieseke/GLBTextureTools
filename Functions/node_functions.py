@@ -351,25 +351,23 @@ def remove_unused_nodes(material):
 
 def remove_double_linking(material,texture_node):
     color_output = texture_node.outputs["Color"]
-    links_cout = len(color_output.links)
+    links_count = len(color_output.links)
     org_vector_input = texture_node.inputs["Vector"]
-    # print(len(color_output.links))
-    if links_cout > 1:
-        for i in range(0,links_cout):
-            # skip first
-            if (i == 0):
-                continue
+    position_y = texture_node.location.y
+
+    if links_count > 1:
+        for link in color_output.links:
             
-            new_texture_node = add_node(material,constants.Shader_Node_Types.image_texture,texture_node.name + "Copy")
+            new_texture_node = add_node(material,constants.Shader_Node_Types.image_texture,texture_node.name + "_Copy" + str(link))
             new_texture_node.image = texture_node.image
             new_texture_node.location = texture_node.location
-            new_texture_node.location.y -= 250
-        
+            position_y -= 250 
+            new_texture_node.location.y = position_y
+
             # relink tex node output
-            linked_node_socket = color_output.links[i].to_socket
-            make_link(material,new_texture_node.outputs["Color"],linked_node_socket)
+            make_link(material,new_texture_node.outputs["Color"],link.to_socket)
             
-            # relink tex node output
+            # remap texture mapping
             if len(org_vector_input.links) is not 0:
                 new_vector_input = new_texture_node.inputs["Vector"]
                 tex_transform_socket = org_vector_input.links[0].from_socket

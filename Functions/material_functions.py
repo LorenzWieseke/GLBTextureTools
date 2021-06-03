@@ -19,7 +19,7 @@ def get_selected_materials(selected_objects):
             selected_materials.add(slot.material)
     return selected_materials
 
-def clean_empty_materials(self):
+def clean_empty_materials():
     for obj in bpy.data.objects:
         for slot in obj.material_slots:
             mat = slot.material
@@ -28,3 +28,8 @@ def clean_empty_materials(self):
                 bpy.ops.object.select_all(action='DESELECT')
                 obj.select_set(True)
                 bpy.ops.object.material_slot_remove()
+
+def clean_no_user_materials():
+        for material in bpy.data.materials:
+            if not material.users:
+                bpy.data.materials.remove(material)

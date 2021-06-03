@@ -430,11 +430,11 @@ class GTT_CleanMaterialsOperator(bpy.types.Operator):
 
     bl_idname = "material.clean_materials"
     bl_label = "Clean Materials"
+    bl_description = "Clean materials with no users and empty material slots"
 
     def execute(self, context):
-        for material in bpy.data.materials:
-            if not material.users:
-                bpy.data.materials.remove(material)
+        material_functions.clean_empty_materials()
+        material_functions.clean_no_user_materials()
 
         return {'FINISHED'}
 
