@@ -1,4 +1,5 @@
 import bpy
+from bpy.types import ObjectShaderFx
 import mathutils
 from .. Functions import node_functions
 from .. Functions import image_functions
@@ -101,39 +102,46 @@ class BakeUtilities():
     def create_bake_material(self,material_name_suffix):
 
         bake_materials = []
-        
+        selected_materials =[]
+        for obj in self.selected_objects:
+             for slot in obj.material_slots:
+                 selected_materials.append(slot.material)
+
         # switch to ao material if we are on org and ao was already baked
         visibility_functions.switch_baked_material(True,"selected","_AO")
         
-        for obj in self.selected_objects:   
-                           
+        for obj in self.selected_objects:    
             for slot in obj.material_slots:
                 
-                org_material = slot.material            
+                org_material = slot.material
+                users_in_scene = org_material.users
+                users_in_selection = selected_materials.count(org_material)
                    
-                # already baked
+                # already baked material
                 if material_name_suffix in org_material.name:
-                    return                
+                    bake_materials.append(org_material)
+                    continue                
                 
-                # duplicate materials with more than 1 user
-                if org_material.users > 1:
-                    org_material = slot.material
+                # duplicate materials if not all in scene are selected
+                if users_in_selection < users_in_scene:
                     org_copy = org_material.copy()
                     slot.material = org_copy
+                    org_material = slot.material               
               
                 
-                org_material = slot.material               
-                bake_material_name = org_material.name + material_name_suffix
                 
-                # try find baked mateial
+                # try find baked material, copy if none found
+                bake_material_name = org_material.name + material_name_suffix
                 bake_material = self.all_materials.get(bake_material_name)
                 if bake_material is None:
                     bake_material = org_material.copy()
                     bake_material.name = bake_material_name
-                    slot.material = bake_material
-                    bake_materials.append(bake_material)
                     
-        self.selected_materials = bake_materials       
+                slot.material = bake_material
+                bake_materials.append(bake_material)
+            
+        # remove duplicate entries
+        self.selected_materials = list(set(bake_materials))       
 
 
     def add_gltf_settings_node(self, material):

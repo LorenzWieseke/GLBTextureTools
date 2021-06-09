@@ -238,20 +238,16 @@ class GTT_HelpPanel(bpy.types.Panel):
     bl_category = "GLB Texture Tools"
     bl_order = 6
 
-    def draw(self, context):
-        scene = context.scene
+    def draw(self,context):
+
         layout = self.layout
-
-        # addon_updater_ops.check_for_update_background()
-
-        # if addon_updater_ops.updater.update_ready == True:
-        #     layout.label(text="New version is out", icon="INFO")
-
-		# # call built-in function with draw code/checks
-        # addon_updater_ops.update_notice_box_ui(self, context)
-        layout.label(text="Find out how to use this addon")
-        layout.operator("scene.open_link",text="Add-on Documentation",icon='HELP').url = "https://govie.de/tutorials-blender/?utm_source=blender-add-on&utm_medium=button#glb_texture_tools"
-        # layout.prop(scene,"help_tex_tools",text="Help",icon = 'HELP')
+        lang = bpy.app.translations.locale
+        if lang == 'en_US':
+            layout.label(text="Find out how to use this addon")
+            layout.operator("scene.open_link",text="Add-on Documentation",icon='HELP').url = "https://govie.de/en/tutorials-blender/?utm_source=blender-add-on&utm_medium=button#glb_texture_tools"
+        if lang == 'de_DE':
+            layout.label(text="Hilfe zur Bedienung des Add-ons")
+            layout.operator("scene.open_link",text="Add-on Documentation",icon='HELP').url = "https://govie.de/tutorials-blender/?utm_source=blender-add-on&utm_medium=button#glb_texture_tools"
 
 
         

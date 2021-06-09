@@ -15,11 +15,11 @@ bl_info = {
     "name": "GLBTextureTools",
     "author": "Lorenz Wieseke",
     "description": "",
-    "blender": (2, 82, 1),
+    "blender": (2, 90, 0),
     "version": (0,0,9),
     "location": "3DView > Properties (N -KEY) > GLB Texture Tools",
     "warning": "",
-    "wiki_url":    "https://docs.google.com/document/d/1w1h3ySyZG4taG01RbbDsPODsUP06cRCggxQKCt32QTk",
+    "wiki_url":    "https://govie.de/en/tutorials-blender/?utm_source=blender-add-on&utm_medium=button#glb_texture_tools",
 	"tracker_url": "https://github.com/LorenzWieseke/GLBTextureTools/issues",
     "category": "Generic"
 }
