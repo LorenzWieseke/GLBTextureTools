@@ -205,7 +205,7 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
         # ----------------------- SET VISIBLITY TO MATERIAL  --------------------#
         texture_settings.preview_bake_texture = False
     
-        # ----------------------- LIGHTMAP  --------------------#
+        # ----------------------- LIGHTMAP / AO --------------------#
         if bake_settings.lightmap or bake_settings.ao_map:
             bake_manager.bake_texture(self,selected_objects,bake_settings)
         

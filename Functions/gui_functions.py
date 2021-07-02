@@ -25,7 +25,8 @@ last_selection = []
 def update_on_selection(scene): 
     C = bpy.context
     global last_selection
-    if C.object is None:
+    object = getattr(C,"object",None)
+    if object is None:
         return
 
     if C.selected_objects != last_selection:
@@ -88,3 +89,4 @@ def headline(layout,*valueList):
 @persistent
 def init_values(self,context):
     bpy.context.scene.world.light_settings.distance = 1
+    

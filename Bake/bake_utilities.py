@@ -255,18 +255,18 @@ class BakeUtilities():
     def bake(self,bake_type):
         channels_to_bake = bake_type
         self.baked_images = []
-        
+        denoise = self.bake_settings.denoise
         # if no denoise, bake only first image
-        if not self.bake_settings.denoise:              
+        if not denoise:              
             channel = bake_type[0]
-            self.bake_and_save_image(self.bake_image,channel)
+            self.bake_and_save_image(self.bake_image,channel,denoise)
             return
 
         for channel in channels_to_bake:
             image_name = self.bake_image.name + "_" + channel 
             image = image_functions.create_image(image_name,self.bake_image.size)
             self.change_image_in_nodes(image)
-            baked_channel_image = self.bake_and_save_image(image,channel)
+            baked_channel_image = self.bake_and_save_image(image,channel,denoise)
             self.baked_images.append(baked_channel_image)
             
         self.denoise()
@@ -291,7 +291,7 @@ class BakeUtilities():
             if image_texture_node.name == self.tex_node_name:
                 image_texture_node.image = image
 
-    def bake_and_save_image(self, image, channel):
+    def bake_and_save_image(self, image, channel,denoise):
         if channel == "NRM":
             self.C.scene.cycles.samples = 1
             self.O.object.bake(type="NORMAL", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
@@ -301,11 +301,16 @@ class BakeUtilities():
             self.O.object.bake(type="DIFFUSE", pass_filter={'COLOR'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
 
         if channel == "AO":
-            self.O.object.bake(type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+            if not denoise:
+                self.O.object.bake('INVOKE_DEFAULT',type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+            else:
+                self.O.object.bake(type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
         
         if channel == "NOISY":
-            self.O.object.bake(type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-        
+            if not denoise:
+                self.O.object.bake('INVOKE_DEFAULT',type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+            else:        
+                self.O.object.bake(type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
         image_functions.save_image(image)
 
         return image

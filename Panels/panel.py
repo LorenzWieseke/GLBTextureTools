@@ -89,7 +89,8 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
 
                 col = split.column(align=True)
                 col.prop(scene.bake_settings, 'denoise', text="Denoise")
-                col.prop(scene.bake_settings, 'show_texture_after_bake', text="Show Texture after Bake")
+                if bake_settings.denoise:
+                    col.prop(scene.bake_settings, 'show_texture_after_bake', text="Show Texture after Bake")
           
         # LIGHTMAPPED OBJECT LIST
         # row = layout.row()

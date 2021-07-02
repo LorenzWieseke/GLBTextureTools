@@ -39,7 +39,6 @@ def register():
     bpy.app.handlers.depsgraph_update_post.append(gui_functions.update_on_selection)
     bpy.app.handlers.load_post.append(gui_functions.init_values)
 
-
 def unregister():
     auto_load.unregister()
 
