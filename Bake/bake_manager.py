@@ -31,7 +31,6 @@ def bake_texture(self, selected_objects, bake_settings):
         
     # ----------------------- BAKING --------------------#
     if bake_settings.lightmap:
-        # bpy.ops.material.clean_lightmap()
         lightmap_utilities.save_metal_value()
         lightmap_utilities.bake(constants.Bake_Types.lightmap)
         lightmap_utilities.load_metal_value()
@@ -41,6 +40,7 @@ def bake_texture(self, selected_objects, bake_settings):
         lightmap_utilities.bake(constants.Bake_Types.ao)
 
     lightmap_utilities.cleanup()
+    del lightmap_utilities
     return
 
 
@@ -58,6 +58,6 @@ def bake_on_plane(self,selected_objects,bake_settings):
     # ----------------------- BAKE --------------------#
 
     pbr_utilities.bake_materials_on_object()
-        
+    del pbr_utilities
 
     return

@@ -48,21 +48,24 @@ def switch_baked_material(*args):
     
     all_mats = bpy.data.materials
     baked_mats = [mat for mat in all_mats if material_name_suffix in mat.name]
+    
 
-    if show_bake_material:
-        for obj in objects:
-            for slot in obj.material_slots:
-                for baked_mat in baked_mats:
-                        if baked_mat.name == slot.material.name + material_name_suffix:
+    for obj in objects:
+        baked_ao_flag = getattr(obj,"ao_map_name") != '' or getattr(obj,"lightmap_name") != '' 
+        if not baked_ao_flag:
+            continue
+        
+        for slot in obj.material_slots:
+            if show_bake_material:
+                    for baked_mat in baked_mats:                      
+                        if baked_mat.name == slot.material.name + material_name_suffix + obj.bake_version:
                             slot.material = baked_mat
-                            
-    elif not show_bake_material:
-        for obj in objects:
-            for slot in obj.material_slots:
+
+            else:
                 if (material_name_suffix in slot.material.name):
-                    bake_mat = slot.material 
-                    index = bake_mat.name.find(material_name_suffix)
-                    org_mat = all_mats.get(bake_mat.name[0:index]) 
+                    bake_material = slot.material 
+                    index = bake_material.name.find(material_name_suffix)
+                    org_mat = all_mats.get(bake_material.name[0:index]) 
                     if org_mat is not None:
                         slot.material = org_mat
  

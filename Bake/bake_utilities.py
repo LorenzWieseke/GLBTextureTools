@@ -76,17 +76,6 @@ class BakeUtilities():
                 for scene_obj in scene_objects:
                     if sel_obj.data.original is scene_obj.data and sel_obj is not scene_obj:
                         linked_objects.add(sel_obj)
-            
-            # self.O.object.select_all(action='DESELECT')
-            # for linked_obj in linked_objects:
-            #     linked_obj.select_set(True)
-
-            # object_functions.apply_transform_on_linked()
-
-            # self.O.object.select_all(action='DESELECT')
-            # for sel_obj in sel_objects:
-            #     if sel_obj not in linked_objects:
-            #         sel_obj.select_set(True)
 
             # do not apply transform if linked objects in selection
             if not len(linked_objects)>0:
@@ -102,44 +91,47 @@ class BakeUtilities():
     def create_bake_material(self,material_name_suffix):
 
         bake_materials = []
-        selected_materials =[]
+        selected_materials = []
         for obj in self.selected_objects:
              for slot in obj.material_slots:
-                 selected_materials.append(slot.material)
+                selected_materials.append(slot.material)
 
         # switch to ao material if we are on org and ao was already baked
-        visibility_functions.switch_baked_material(True,"selected","_AO")
+        visibility_functions.switch_baked_material(True,"scene","_AO")
         
         for obj in self.selected_objects:    
             for slot in obj.material_slots:
-                
-                org_material = slot.material
-                users_in_scene = org_material.users
-                users_in_selection = selected_materials.count(org_material)
+                material = slot.material
+                bake_material_name = material.name + material_name_suffix
                    
-                # already baked material
-                if material_name_suffix in org_material.name:
-                    bake_materials.append(org_material)
-                    continue                
-                
-                # duplicate materials if not all in scene are selected
-                if users_in_selection < users_in_scene:
-                    org_copy = org_material.copy()
-                    slot.material = org_copy
-                    org_material = slot.material               
-              
-                
-                
-                # try find baked material, copy if none found
-                bake_material_name = org_material.name + material_name_suffix
-                bake_material = self.all_materials.get(bake_material_name)
-                if bake_material is None:
-                    bake_material = org_material.copy()
-                    bake_material.name = bake_material_name
+                # check if material was already baked
+                if material_name_suffix in material.name:
+                    bake_materials.append(material)
+                    continue    
+                            
+                # if not, copy material or take one out of the previewsly filled bake list
+                else :
+                    bake_material = list(filter(lambda material: material.name == bake_material_name, bake_materials))
                     
-                slot.material = bake_material
-                bake_materials.append(bake_material)
+                    if len(bake_material) == 0:
+                        bake_material = material.copy()             
+                        bake_material.name = bake_material_name
+                        bake_materials.append(bake_material) 
+                        slot.material = bake_material 
+
+                    else:
+                        bake_material = bake_material[0]
+                        slot.material = bake_material
+
+                    index = bake_material.name.find(".")
+                    if index == -1:
+                        obj.bake_version = ""
+                    else:   
+                        obj.bake_version = bake_material.name[index:]
+                    
+                material.use_fake_user = True
             
+
         # remove duplicate entries
         self.selected_materials = list(set(bake_materials))       
 
@@ -258,8 +250,6 @@ class BakeUtilities():
                 uv_node.location = mathutils.Vector((-700, 200))
 
                 # linking
-                pbr_node = node_functions.get_pbr_node(material)
-                # node_functions.make_link(material, image_texture_node.outputs['Color'], pbr_node.inputs['Emission'])
                 node_functions.make_link(material, uv_node.outputs["UV"],image_texture_node.inputs['Vector'])        
 
     def bake(self,bake_type):
@@ -404,6 +394,8 @@ class PbrBakeUtilities(BakeUtilities):
 
     def bake_pbr(self):
         material = self.active_material
+        material.use_fake_user = True
+        
         nodes = material.node_tree.nodes
         pbr_node = node_functions.get_pbr_node(material)        
         pbr_inputs = node_functions.get_pbr_inputs(pbr_node)

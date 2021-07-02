@@ -70,7 +70,7 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
                 row = box.row()
                 row.prop(scene.bake_settings, 'bake_image_name',  text="")
                 row = box.row()
-                row.prop(scene.bake_settings, 'baked_lightmaps_enum',text="") 
+                row.prop(scene.bake_settings, 'baking_groups',text="") 
                 row.operator("object.select_lightmap_objects",text="",icon="RESTRICT_SELECT_OFF")
 
                 if bake_settings.lightmap:

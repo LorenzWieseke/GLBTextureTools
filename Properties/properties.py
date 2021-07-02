@@ -16,6 +16,7 @@ bpy.types.Scene.img_bake_size = EnumProperty(
         ('1024', '1024', 'Set image size to 1024'),
         ('2048', '2048', 'Set image size to 2048'),
         ('4096', '4096', 'Set image size to 4096'),
+        ('8184', '8184', 'Set image size to 8184'),
         ('0', 'Original', 'Set image back to original file'),
     ])
 
@@ -57,7 +58,7 @@ class GTT_Cleanup_Settings(bpy.types.PropertyGroup):
 bpy.utils.register_class(GTT_Cleanup_Settings)
 bpy.types.Scene.cleanup_settings = PointerProperty(type=GTT_Cleanup_Settings)
 
-
+    
 class GTT_Bake_Settings(bpy.types.PropertyGroup):  
     open_bake_settings_menu: BoolProperty(default = False)    
     open_object_bake_list_menu: BoolProperty(default = False)    
@@ -71,8 +72,12 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
 
     lightmap: BoolProperty(default = False,update=gui_functions.update_lightmap_button)
     lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
-    
-    baked_lightmaps_enum: EnumProperty(name='Baked Textures',description='List of all the Baked Textures',items=gui_functions.update_bake_list)
+
+    baking_groups: EnumProperty(
+        name='Baked Textures',
+        description='Groups of objects that share the same baking maps. Click on cursor on the right to select all objectes in that group.',
+        items=gui_functions.update_bake_list
+    )
 
     
     def get_baked_lightmaps(context):
@@ -96,7 +101,6 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
     texture_node_ao="AO"
     cleanup_textures=False
 
-
 bpy.utils.register_class(GTT_Bake_Settings)
 bpy.types.Scene.bake_settings = PointerProperty(type=GTT_Bake_Settings)
 class GTT_Texture_Settings(bpy.types.PropertyGroup):
@@ -108,7 +112,7 @@ class GTT_Texture_Settings(bpy.types.PropertyGroup):
 
     preview_bake_texture:BoolProperty(default=False,update=visibility_functions.preview_bake_texture)
     preview_lightmap:BoolProperty(default=False,update=visibility_functions.preview_lightmap)
-    texture_index:IntProperty(name = "Index for Texture List", default = 0, update=visibility_functions.update_selected_image)
+    texture_index:IntProperty(name = "Index for Texture List", default=0, update=visibility_functions.update_selected_image)
 
 bpy.utils.register_class(GTT_Texture_Settings)
 bpy.types.Scene.texture_settings = PointerProperty(type=GTT_Texture_Settings)
@@ -131,4 +135,5 @@ bpy.types.Image.org_image_name = StringProperty()
 bpy.types.Object.hasLightmap = BoolProperty()
 bpy.types.Object.lightmap_name = StringProperty()
 bpy.types.Object.ao_map_name = StringProperty()
+bpy.types.Object.bake_version = StringProperty()
 

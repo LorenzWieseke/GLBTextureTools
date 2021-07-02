@@ -2,9 +2,9 @@ import os
 import subprocess
 import bpy
 
+from .. Functions import gui_functions
 from .. Functions import node_functions
 from .. Functions import image_functions
-from .. Functions import object_functions
 from .. Functions import visibility_functions
 from .. Functions import basic_functions
 from .. Functions import material_functions
@@ -43,7 +43,7 @@ class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        if context.scene.bake_settings.baked_lightmaps_enum == '':
+        if context.scene.bake_settings.baking_groups == '-- Baking Groups --':
             return False
         return True
 
@@ -53,12 +53,12 @@ class GTT_SelectLightmapObjectsOperator(bpy.types.Operator):
         O = bpy.ops
 
         bake_settings = C.scene.bake_settings
+        active_lightmap = bake_settings.baking_groups
         objects = [ob for ob in bpy.context.view_layer.objects if ob.visible_get()]
-        bake_settings.bake_image_name = bake_settings.baked_lightmaps_enum
 
         O.object.select_all(action='DESELECT')
         for obj in objects:
-            if obj.lightmap_name == bake_settings.baked_lightmaps_enum or obj.ao_map_name == bake_settings.baked_lightmaps_enum:
+            if obj.lightmap_name == active_lightmap or obj.ao_map_name == active_lightmap:
                 C.view_layer.objects.active = obj
                 obj.select_set(True)
 
@@ -217,6 +217,8 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
                     obj.ao_map_name = bake_settings.bake_image_name
                 if bake_settings.lightmap:
                     obj.lightmap_name = bake_settings.bake_image_name
+                    
+            gui_functions.update_active_element_in_bake_list()
 
         # ----------------------- PBR Texture --------------------#
         if bake_settings.pbr_nodes:
@@ -360,6 +362,7 @@ class GTT_SetActiveUVOperator(bpy.types.Operator):
 
 # class CleanBakesOperator(bpy.types.Operator):
 class GTT_RemoveLightmapOperator(bpy.types.Operator):
+    """Remove Lightmap and UV Node"""
     bl_idname = "material.clean_lightmap"
     bl_label = "Clean Lightmap"
 
@@ -389,10 +392,14 @@ class GTT_RemoveLightmapOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 class GTT_RemoveAOOperator(bpy.types.Operator):
+    """Remove AO Node and clear baking flags on object"""
     bl_idname = "material.clean_ao_map"
     bl_label = "Clean AO map"
 
     def execute(self, context):
+        visibility_functions.switch_baked_material(False,"scene","_AO")
+        bpy.ops.material.clean_materials()
+        
         bake_settings = context.scene.bake_settings
         selected_objects = context.selected_objects
         all_materials = set()
@@ -409,14 +416,17 @@ class GTT_RemoveAOOperator(bpy.types.Operator):
             # node_functions.remove_node(mat,"Second_UV")
             node_functions.remove_node(mat,"glTF Settings")
         
-        #remove lightmap flag
+        #remove flag
         for obj in selected_objects:
             if obj.get('ao_map_name') is not None :
                 del obj["ao_map_name"]
+            if obj.get('bake_version') is not None :
+                del obj["bake_version"]
                 
         return {'FINISHED'}
 
 class GTT_CleanTexturesOperator(bpy.types.Operator):
+    """Remove unreferenced images"""
     bl_idname = "image.clean_textures"
     bl_label = "Clean Textures"
 
@@ -427,10 +437,9 @@ class GTT_CleanTexturesOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 class GTT_CleanMaterialsOperator(bpy.types.Operator):
-
+    """Clean materials with no users and remove empty material slots"""
     bl_idname = "material.clean_materials"
     bl_label = "Clean Materials"
-    bl_description = "Clean materials with no users and empty material slots"
 
     def execute(self, context):
         material_functions.clean_empty_materials()
@@ -439,9 +448,9 @@ class GTT_CleanMaterialsOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 class GTT_CleanUnusedImagesOperator(bpy.types.Operator):
+    """Clean all images from Hard Disk that are not used in scene"""
     bl_idname = "scene.clean_unused_images"
     bl_label = "Clean Images"
-    bl_description = "Clean all images from Hard Disk that are not used in scene"
     bl_options = {"REGISTER"}
 
     @classmethod
@@ -478,9 +487,9 @@ class GTT_CleanUnusedImagesOperator(bpy.types.Operator):
 # ----------------------- FILE OPERATORS--------------------#
 
 class GTT_OpenTexturesFolderOperator(bpy.types.Operator):
+    """Open Texture folder if it exists, bake or scale texture to create texture folder"""
     bl_idname = "scene.open_textures_folder"
     bl_label = "Open Folder"
-    bl_description = "Open Texture folder if it exists, bake or scale texture to create texture folder"
 
     texture_path="\\textures\\"
     

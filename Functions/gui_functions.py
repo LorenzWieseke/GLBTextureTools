@@ -1,6 +1,4 @@
 import bpy
-from bpy import context
-from . import object_functions
 from bpy.app.handlers import persistent
 
 
@@ -47,7 +45,7 @@ def update_bake_list(bake_settings,context):
                 bake_textures_set.add((obj.ao_map_name, obj.ao_map_name, "Baked Texture Name"))
 
     if len(bake_textures_set) == 0:
-        bake_textures_set.add((" "," ","No Lightmap baked yet"))
+        bake_textures_set.add(("-- Baking Groups --","-- Baking Groups --","No Lightmap baked yet"))
 
     return list(bake_textures_set)
 
@@ -71,10 +69,11 @@ def update_active_element_in_bake_list():
     keys = [key[0] for key in enum_items]
     if new_bake_image_name in keys:
         bake_settings.bake_image_name = new_bake_image_name
-        bake_settings.baked_lightmaps_enum = new_bake_image_name
+        bake_settings.baking_groups = new_bake_image_name
     else:
         if active_object.type == "MESH":
             bake_settings.bake_image_name = new_bake_image_name
+            bake_settings.baking_groups = "-- Baking Groups --"
    
 
 def headline(layout,*valueList):
@@ -86,3 +85,6 @@ def headline(layout,*valueList):
         split = split.split(factor=pair[0])
         split.label(text=pair[1])
         
+@persistent
+def init_values(self,context):
+    bpy.context.scene.world.light_settings.distance = 1
