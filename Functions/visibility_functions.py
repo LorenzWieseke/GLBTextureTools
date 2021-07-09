@@ -22,14 +22,17 @@ def switch_baked_material(*args):
     show_bake_material = args[0]
     affect = args[1]
     material_name_suffix = ""
+    bake_type = "PBR"
 
     # called without material_name_suffix
     if len(args) == 2:
         # what type of bake map to switch to    
         if context.scene.bake_settings.pbr_nodes:      
             material_name_suffix = "_Bake"
+            bake_type = "PBR"
         if context.scene.bake_settings.ao_map or context.scene.bake_settings.lightmap:       
             material_name_suffix = "_AO"
+            bake_type = "Lightmap"
     
     # called with material_name_suffix
     if len(args) == 3:
@@ -50,10 +53,12 @@ def switch_baked_material(*args):
     baked_mats = [mat for mat in all_mats if material_name_suffix in mat.name]
     
 
-    for obj in objects:
-        baked_ao_flag = getattr(obj,"ao_map_name") != '' or getattr(obj,"lightmap_name") != '' 
-        if not baked_ao_flag:
-            continue
+    for obj in objects:   
+
+        if bake_type == "Lightmap":
+            baked_ao_flag = getattr(obj,"ao_map_name") != '' or getattr(obj,"lightmap_name") != '' 
+            if not baked_ao_flag:
+                continue
         
         for slot in obj.material_slots:
             if show_bake_material:
