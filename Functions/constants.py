@@ -17,7 +17,15 @@ class Shader_Node_Types:
     mix ="ShaderNodeMixRGB"
 
 
-class Bake_Types:
+class Bake_Passes:
     pbr = ["EMISSION"]
     lightmap = ["NOISY", "NRM", "COLOR"]
     ao = ["AO","COLOR"]
+    
+class Material_Suffix:
+    bake_type_mat_suffix = {
+        "pbr" : "_Bake",
+        "ao" : "_AO"
+    }
+
+

@@ -1,4 +1,5 @@
 import bpy
+from bpy import context
 from . import node_functions
 from . import material_functions
 from . import constants
@@ -16,27 +17,10 @@ def show_image_in_image_editor(image):
             area.spaces.active.image = image
             
             
-def switch_baked_material(*args):
-    context = bpy.context
+def switch_baked_material(show_bake_material,affect):
     
-    show_bake_material = args[0]
-    affect = args[1]
-    material_name_suffix = ""
-    bake_type = "PBR"
-
-    # called without material_name_suffix
-    if len(args) == 2:
-        # what type of bake map to switch to    
-        if context.scene.bake_settings.pbr_nodes:      
-            material_name_suffix = "_Bake"
-            bake_type = "PBR"
-        if context.scene.bake_settings.ao_map or context.scene.bake_settings.lightmap:       
-            material_name_suffix = "_AO"
-            bake_type = "Lightmap"
-    
-    # called with material_name_suffix
-    if len(args) == 3:
-        material_name_suffix = args[2]
+    current_bake_type = bpy.context.scene.bake_settings.get_current_bake_type()
+    material_name_suffix = constants.Material_Suffix.bake_type_mat_suffix[current_bake_type]
     
     # on what object to work
     if affect == 'active':
@@ -55,7 +39,7 @@ def switch_baked_material(*args):
 
     for obj in objects:   
 
-        if bake_type == "Lightmap":
+        if current_bake_type != "pbr":
             baked_ao_flag = getattr(obj,"ao_map_name") != '' or getattr(obj,"lightmap_name") != '' 
             if not baked_ao_flag:
                 continue
@@ -85,10 +69,10 @@ def preview_bake_texture(self,context):
 
         nodes = mat.node_tree.nodes
         bake_texture_node = None
-        if bake_settings.lightmap:
+        if bake_settings.lightmap_bake:
             bake_texture_node = nodes.get(bake_settings.texture_node_lightmap)
 
-        elif bake_settings.ao_map:
+        elif bake_settings.ao_bake:
             bake_texture_node = nodes.get(bake_settings.texture_node_ao)
 
 

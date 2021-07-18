@@ -46,26 +46,26 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
 
             col = box.column(align = True)
             row = col.row(align = True)                       
-            row.prop(scene.bake_settings, 'pbr_nodes', text="PBR",toggle = True)
+            row.prop(scene.bake_settings, 'pbr_bake', text="PBR",toggle = True)
             row.prop(scene.bake_settings, 'pbr_samples', text="Samples",toggle = True)    
                       
             row = col.row(align = True)     
-            row.prop(scene.bake_settings, 'ao_map',  text="AO",toggle = True)
+            row.prop(scene.bake_settings, 'ao_bake',  text="AO",toggle = True)
             row.prop(scene.bake_settings, 'ao_samples',  text="Samples")
 
             row = col.row(align = True)     
-            row.prop(scene.bake_settings, 'lightmap',  text="Lightmap",toggle = True)
+            row.prop(scene.bake_settings, 'lightmap_bake',  text="Lightmap",toggle = True)
             row.prop(scene.bake_settings, 'lightmap_samples',  text="Samples")
             
 
-            if bake_settings.pbr_nodes:
+            if bake_settings.pbr_bake:
                 row = box.row()
                 # col = row.collumn()
                 row.prop(scene.bake_settings, 'mute_texture_nodes', text="Mute Texture Mapping")
                 # row.prop(scene.bake_settings, 'bake_image_clear', text="Clear Bake Image")
 
 
-            if bake_settings.lightmap or bake_settings.ao_map:
+            if bake_settings.lightmap_bake or bake_settings.ao_bake:
 
                 row = box.row()
                 row.prop(scene.bake_settings, 'bake_image_name',  text="")
@@ -73,10 +73,10 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
                 row.prop(scene.bake_settings, 'baking_groups',text="") 
                 row.operator("object.select_lightmap_objects",text="",icon="RESTRICT_SELECT_OFF")
 
-                if bake_settings.lightmap:
+                if bake_settings.lightmap_bake:
                     box.prop(scene.world.node_tree.nodes["Background"].inputs[1],'default_value',text="World Influence")
 
-                if bake_settings.ao_map:
+                if bake_settings.ao_bake:
                     box.prop(scene.world.light_settings,"distance",text="AO Distance")
                 
                 box.prop(scene.bake_settings, 'unwrap_margin', text="UV Margin")

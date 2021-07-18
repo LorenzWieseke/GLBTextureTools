@@ -30,14 +30,14 @@ def bake_texture(self, selected_objects, bake_settings):
     lightmap_utilities.add_node_setup()
         
     # ----------------------- BAKING --------------------#
-    if bake_settings.lightmap:
+    if bake_settings.lightmap_bake:
         lightmap_utilities.save_metal_value()
-        lightmap_utilities.bake(constants.Bake_Types.lightmap)
+        lightmap_utilities.bake(constants.Bake_Passes.lightmap)
         lightmap_utilities.load_metal_value()
         lightmap_utilities.add_lightmap_flag()
     
-    if bake_settings.ao_map:
-        lightmap_utilities.bake(constants.Bake_Types.ao)
+    if bake_settings.ao_bake:
+        lightmap_utilities.bake(constants.Bake_Passes.ao)
 
     lightmap_utilities.cleanup()
     del lightmap_utilities

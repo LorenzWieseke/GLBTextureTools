@@ -51,11 +51,11 @@ class BakeUtilities():
             self.C.preferences.addons['cycles'].preferences.compute_device_type = 'CUDA'
 
         # setup samples
-        if self.bake_settings.pbr_nodes:
+        if self.bake_settings.pbr_bake:
             self.C.scene.cycles.samples = self.bake_settings.pbr_samples
-        if self.bake_settings.lightmap:
-            self.C.scene.cycles.samples = self.bake_settings.lightmap_samples
-        if self.bake_settings.ao_map:
+        if self.bake_settings.lightmap_bake:
+            self.C.scene.cycles.samples = self.bake_settings.lightmap_bake_samples
+        if self.bake_settings.ao_bake:
             self.C.scene.cycles.samples = self.bake_settings.ao_samples
 
         self.C.scene.render.resolution_percentage = 100        
@@ -97,14 +97,14 @@ class BakeUtilities():
                 selected_materials.append(slot.material)
 
         # switch to ao material if we are on org and ao was already baked
-        visibility_functions.switch_baked_material(True,"scene","_AO")
+        visibility_functions.switch_baked_material(True,"scene")
         
         for obj in self.selected_objects:    
             for slot in obj.material_slots:
                 material = slot.material
                 bake_material_name = material.name + material_name_suffix
                    
-                # check if material was already baked
+                # check if material was already baked and continue
                 if material_name_suffix in material.name:
                     bake_materials.append(material)
                     continue    
@@ -160,10 +160,10 @@ class BakeUtilities():
         nodes = material.node_tree.nodes
         
         # add image texture
-        if self.bake_settings.lightmap:
+        if self.bake_settings.lightmap_bake:
             self.tex_node_name = self.bake_settings.texture_node_lightmap
 
-        if self.bake_settings.ao_map:
+        if self.bake_settings.ao_bake:
             self.tex_node_name = self.bake_settings.texture_node_ao
         
         image_texture_node = node_functions.add_node(material, constants.Shader_Node_Types.image_texture, self.tex_node_name)
@@ -229,7 +229,7 @@ class BakeUtilities():
     def add_node_setup(self):    
         for material in self.selected_materials:
             # AO
-            if self.bake_settings.ao_map:
+            if self.bake_settings.ao_bake:
                 uv_node = self.add_uv_node(material)
                 image_texture_node = self.add_image_texture_node(material)
                 gltf_settings_node = self.add_gltf_settings_node(material)
@@ -242,7 +242,7 @@ class BakeUtilities():
                 node_functions.make_link(material, image_texture_node.outputs['Color'], gltf_settings_node.inputs['Occlusion'])
             
             # LIGHTMAP
-            if self.bake_settings.lightmap:
+            if self.bake_settings.lightmap_bake:
                 image_texture_node = self.add_image_texture_node(material)
                 uv_node = self.add_uv_node(material)
                 # position
@@ -273,14 +273,14 @@ class BakeUtilities():
 
     def denoise(self):
         # denoise
-        if self.bake_settings.lightmap:           
+        if self.bake_settings.lightmap_bake:           
             denoised_image_path = node_functions.comp_ai_denoise(self.baked_images[0],self.baked_images[1],self.baked_images[2])
             self.bake_image.filepath = denoised_image_path
             self.bake_image.source = "FILE"
             self.change_image_in_nodes(self.bake_image)
             
         # blur
-        if self.bake_settings.ao_map and self.bake_settings.denoise:
+        if self.bake_settings.ao_bake and self.bake_settings.denoise:
             blur_image_path = node_functions.blur_bake_image(self.baked_images[0],self.baked_images[1])
             self.bake_image.filepath = blur_image_path
             self.bake_image.source = "FILE"
@@ -381,7 +381,7 @@ class PbrBakeUtilities(BakeUtilities):
             self.create_nodes_after_pbr_bake()      
             self.cleanup_nodes()
             
-        visibility_functions.switch_baked_material(True,"visible","_Bake")
+        visibility_functions.switch_baked_material(True,"visible")
 
     def add_bake_plane(self):
         material = self.active_material
