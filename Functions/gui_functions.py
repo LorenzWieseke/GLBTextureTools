@@ -3,17 +3,17 @@ from bpy.app.handlers import persistent
 
 
 def update_pbr_button(self,context):
-    self["lightmap"] = False
-    self["ao_map"] = False
+    self["lightmap_bake"] = False
+    self["ao_bake"] = False
 
 def update_lightmap_button(self,context):
-    self["pbr_nodes"] = False
-    self["ao_map"] = False
+    self["pbr_bake"] = False
+    self["ao_bake"] = False
     update_active_element_in_bake_list()
 
 def update_ao_button(self,context):
-    self["lightmap"] = False
-    self["pbr_nodes"] = False
+    self["lightmap_bake"] = False
+    self["pbr_bake"] = False
     update_active_element_in_bake_list()
     
     
@@ -38,10 +38,10 @@ def update_bake_list(bake_settings,context):
     bake_textures_set = set()
 
     for obj in bpy.data.objects:
-        if bake_settings.lightmap:
+        if bake_settings.lightmap_bake:
             if obj.get("lightmap_name"):
                 bake_textures_set.add((obj.lightmap_name, obj.lightmap_name, "Baked Texture Name"))
-        if bake_settings.ao_map:
+        if bake_settings.ao_bake:
             if obj.get("ao_map_name"):
                 bake_textures_set.add((obj.ao_map_name, obj.ao_map_name, "Baked Texture Name"))
 
@@ -57,11 +57,11 @@ def update_active_element_in_bake_list():
     bake_settings = C.scene.bake_settings
     new_bake_image_name = ""
     
-    if bake_settings.lightmap:
+    if bake_settings.lightmap_bake:
         new_bake_image_name = active_object.get("lightmap_name")
         if new_bake_image_name is None:
             new_bake_image_name = "Lightmap " + active_object.name
-    if bake_settings.ao_map:
+    if bake_settings.ao_bake:
         new_bake_image_name = active_object.get("ao_map_name")
         if new_bake_image_name is None:
             new_bake_image_name = "AO " + active_object.name

@@ -2,8 +2,16 @@ import bpy
 import os
 from . import node_functions
 from . import constants
+from bpy.app.handlers import persistent
 
-# def get_all_images_in_material()
+@persistent
+def save_images(self,context):
+    images = bpy.data.images
+    for img in images:
+        if img.is_dirty:
+            print(img.name)
+            save_image(img)        # img.save()
+
 
 def get_all_images_in_ui_list():
     

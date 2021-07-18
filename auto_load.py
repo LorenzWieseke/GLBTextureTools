@@ -13,6 +13,8 @@ __all__ = (
     "unregister",
 )
 
+blender_version = bpy.app.version
+
 modules = None
 ordered_classes = None
 
@@ -22,9 +24,6 @@ def init():
 
     modules = get_all_submodules(Path(__file__).parent)
     ordered_classes = get_ordered_classes_to_register(modules)
-
-def get_classes():
-    return ordered_classes
 
 def register():
     for cls in ordered_classes:
@@ -94,9 +93,13 @@ def iter_my_deps_from_annotations(cls, my_classes):
                 yield dependency
 
 def get_dependency_from_annotation(value):
-    if isinstance(value, tuple) and len(value) == 2:
-        if value[0] in (bpy.props.PointerProperty, bpy.props.CollectionProperty):
-            return value[1]["type"]
+    if blender_version >= (2, 93):
+        if isinstance(value, bpy.props._PropertyDeferred):
+            return value.keywords.get("type")
+    else:
+        if isinstance(value, tuple) and len(value) == 2:
+            if value[0] in (bpy.props.PointerProperty, bpy.props.CollectionProperty):
+                return value[1]["type"]
     return None
 
 def iter_my_deps_from_parent_id(cls, my_classes_by_idname):
@@ -131,7 +134,8 @@ def get_register_base_types():
         "Panel", "Operator", "PropertyGroup",
         "AddonPreferences", "Header", "Menu",
         "Node", "NodeSocket", "NodeTree",
-        "UIList", "RenderEngine"
+        "UIList", "RenderEngine",
+        "Gizmo", "GizmoGroup",
     ])
 
 

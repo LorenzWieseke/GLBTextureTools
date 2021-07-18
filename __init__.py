@@ -16,7 +16,7 @@ bl_info = {
     "author": "Lorenz Wieseke",
     "description": "",
     "blender": (2, 90, 0),
-    "version": (0,1,0),
+    "version": (0,1,1),
     "location": "3DView > Properties (N -KEY) > GLB Texture Tools",
     "warning": "",
     "wiki_url":    "https://govie.de/en/tutorials-blender/?utm_source=blender-add-on&utm_medium=button#glb_texture_tools",
@@ -26,19 +26,25 @@ bl_info = {
 
 import bpy
 from .Functions import gui_functions
+from .Functions import image_functions
 
 
 from . import auto_load
 
 auto_load.init()
-classes = auto_load.get_classes()
+classes = auto_load.init()
 
 def register():
     auto_load.register()
     bpy.app.handlers.depsgraph_update_post.clear()    
     bpy.app.handlers.depsgraph_update_post.append(gui_functions.update_on_selection)
     bpy.app.handlers.load_post.append(gui_functions.init_values)
+    bpy.app.handlers.save_pre.append(image_functions.save_images)
 
 def unregister():
     auto_load.unregister()
+    bpy.app.handlers.depsgraph_update_post.clear()    
+    bpy.app.handlers.load_post.clear()
+    bpy.app.handlers.save_pre.clear()
+    
 

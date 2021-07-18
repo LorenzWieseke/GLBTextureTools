@@ -64,13 +64,13 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
     open_object_bake_list_menu: BoolProperty(default = False)    
     
     # Type of bake
-    pbr_nodes: BoolProperty(default = True,update=gui_functions.update_pbr_button)
+    pbr_bake: BoolProperty(default = True,update=gui_functions.update_pbr_button)
     pbr_samples: IntProperty(name = "Samples for PBR bake", default = 1)
     
-    ao_map: BoolProperty(default = False,update=gui_functions.update_ao_button)
+    ao_bake: BoolProperty(default = False,update=gui_functions.update_ao_button)
     ao_samples: IntProperty(name = "Samples for AO bake", default = 2)
 
-    lightmap: BoolProperty(default = False,update=gui_functions.update_lightmap_button)
+    lightmap_bake: BoolProperty(default = False,update=gui_functions.update_lightmap_button)
     lightmap_samples: IntProperty(name = "Samples for Lightmap bake", default = 10)
 
     baking_groups: EnumProperty(
@@ -79,6 +79,15 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
         items=gui_functions.update_bake_list
     )
 
+    def get_current_bake_type(self):
+        if self.pbr_bake:
+            current_bake_type = "pbr"
+        if self.ao_bake:
+            current_bake_type = "ao"
+        if self.lightmap_bake:
+            current_bake_type = "lightmap"
+
+        return current_bake_type
     
     def get_baked_lightmaps(context):
         return gui_functions.update_bake_list(context,context)

@@ -2,14 +2,10 @@ import os
 import subprocess
 import bpy
 
-from .. Functions import gui_functions
-from .. Functions import node_functions
-from .. Functions import image_functions
-from .. Functions import visibility_functions
-from .. Functions import basic_functions
-from .. Functions import material_functions
-from .. Bake import bake_manager
-from .. Functions import constants
+from ..Bake import bake_manager
+from ..Functions import (basic_functions, constants, gui_functions,
+                         image_functions, material_functions, node_functions,
+                         visibility_functions)
 
 
 class GTT_VerifyMaterialsOperator(bpy.types.Operator):
@@ -206,22 +202,22 @@ class GTT_NodeToTextureOperator(bpy.types.Operator):
         texture_settings.preview_bake_texture = False
     
         # ----------------------- LIGHTMAP / AO --------------------#
-        if bake_settings.lightmap or bake_settings.ao_map:
+        if bake_settings.lightmap_bake or bake_settings.ao_bake:
             bake_manager.bake_texture(self,selected_objects,bake_settings)
         
             if bake_settings.show_texture_after_bake:
                 texture_settings.preview_bake_texture = True
                         
             for obj in selected_objects:
-                if bake_settings.ao_map:
+                if bake_settings.ao_bake:
                     obj.ao_map_name = bake_settings.bake_image_name
-                if bake_settings.lightmap:
+                if bake_settings.lightmap_bake:
                     obj.lightmap_name = bake_settings.bake_image_name
                     
             gui_functions.update_active_element_in_bake_list()
 
         # ----------------------- PBR Texture --------------------#
-        if bake_settings.pbr_nodes:
+        if bake_settings.pbr_bake:
             bake_manager.bake_on_plane(self,selected_objects,bake_settings)
 
         return {'FINISHED'}
@@ -397,7 +393,7 @@ class GTT_RemoveAOOperator(bpy.types.Operator):
     bl_label = "Clean AO map"
 
     def execute(self, context):
-        visibility_functions.switch_baked_material(False,"scene","_AO")
+        visibility_functions.switch_baked_material(False,"scene")
         bpy.ops.material.clean_materials()
         
         bake_settings = context.scene.bake_settings
@@ -511,8 +507,17 @@ class GTT_OpenTexturesFolderOperator(bpy.types.Operator):
             self.report({'INFO'}, 'You need to save Blend file first !')
 
         return {"FINISHED"}
-
-        
-
-
  
+class GOVIE_Open_Link_Operator(bpy.types.Operator):
+    bl_idname = "scene.open_link"
+    bl_label = "Open Website"
+    bl_description = "Go to GOVIE Website"
+
+    url : bpy.props.StringProperty(name="url")
+
+    @classmethod
+    def poll(cls, context):
+        return True
+    def execute(self, context):
+        bpy.ops.wm.url_open(url=self.url)
+        return {"FINISHED"}
