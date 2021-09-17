@@ -321,7 +321,7 @@ class BakeUtilities():
 
     def cleanup(self):
         # set back engine
-        self.C.scene.render.engine = self.render_engine
+        # self.C.scene.render.engine = self.render_engine
         self.C.preferences.addons['cycles'].preferences.compute_device_type = self.cycles_device_type
 
         # cleanup images

@@ -103,7 +103,7 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
 
         row = layout.row(align=True)
         row.scale_y = 2.0
-        row.operator("object.node_to_texture_operator",text="Bake Textures")
+        row.operator("object.gtt_bake_operator",text="Bake Textures")
         row.operator("scene.open_textures_folder",icon='FILEBROWSER')
         
 class GTT_VisibilityPanel(bpy.types.Panel):
