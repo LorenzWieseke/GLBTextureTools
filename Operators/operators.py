@@ -5,7 +5,7 @@ import bpy
 
 from ..Functions import (basic_functions, constants,
                          image_functions, material_functions, node_functions,
-                         visibility_functions)
+                         visibility_functions,object_functions)
 
 
 class GTT_VerifyMaterialsOperator(bpy.types.Operator):
@@ -99,16 +99,18 @@ class GTT_GetMaterialByTextureOperator(bpy.types.Operator):
         materials_found.clear()
 
         for mat in materials:
-            nodes = mat.node_tree.nodes
-            tex_node_type = constants.Node_Types.image_texture
-            tex_nodes = node_functions.get_nodes_by_type(nodes,tex_node_type)
-            
-            # if texture node in current node tree
-            if len(tex_nodes) > 0:
-                images = [node.image for node in tex_nodes]
-                if sel_image_texture in images:
-                    materials_found.append(mat.name)
-                    # object_functions.select_obj_by_mat(self,mat)
+            if hasattr(mat,"node_tree"):
+                if hasattr(mat.node_tree,"nodes"):
+                    nodes = mat.node_tree.nodes
+                    tex_node_type = constants.Node_Types.image_texture
+                    tex_nodes = node_functions.get_nodes_by_type(nodes,tex_node_type)
+                    
+                    # if texture node in current node tree
+                    if len(tex_nodes) > 0:
+                        images = [node.image for node in tex_nodes]
+                        if sel_image_texture in images:
+                            materials_found.append(mat.name)
+                            object_functions.select_obj_by_mat(self,mat)
                     
 
         return {"FINISHED"}
@@ -349,7 +351,6 @@ class GTT_RemoveAOOperator(bpy.types.Operator):
                 continue
                 
             node_functions.remove_node(mat,bake_settings.texture_node_ao)
-            # node_functions.remove_node(mat,"Second_UV")
             node_functions.remove_node(mat,"glTF Settings")
         
         #remove flag

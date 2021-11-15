@@ -74,7 +74,6 @@ def update_active_element_in_bake_list():
     else:
         if active_object.type == "MESH":
             bake_settings.bake_image_name = new_bake_image_name
-            bake_settings.baking_groups = "-- Baking Groups --"
    
 
 def headline(layout,*valueList):
