@@ -32,6 +32,9 @@ class GTT_BakeOperator(bpy.types.Operator):
 
         # ----------------------- CHECK SELECTION  --------------------#
 
+        if len(selected_objects) > 0:
+            active_object = selected_objects[0]
+            
         if active_object.type != 'MESH':
             self.report({'INFO'}, 'No Mesh selected')
             return {'FINISHED'}

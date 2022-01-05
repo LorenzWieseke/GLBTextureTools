@@ -13,9 +13,6 @@ def modal_wrap(modal_func, callback):
             callback(ret)
         return retset
     return wrap
-
-def test():
-    print(op)
     
 # op._modal_org = op.modal
 op.modal = modal_wrap(op.modal, callback)

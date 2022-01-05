@@ -15,7 +15,7 @@ bl_info = {
     "name": "GLBTextureTools",
     "author": "Lorenz Wieseke",
     "description": "",
-    "blender": (2, 90, 0),
+    "blender": (3, 0, 0),
     "version": (0,1,1),
     "location": "3DView > Properties (N -KEY) > GLB Texture Tools",
     "warning": "",

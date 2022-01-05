@@ -33,3 +33,8 @@ def clean_no_user_materials():
         for material in bpy.data.materials:
             if not material.users:
                 bpy.data.materials.remove(material)
+
+def use_nodes():
+    for material in bpy.data.materials:
+            if not material.use_nodes:
+                material.use_nodes = True

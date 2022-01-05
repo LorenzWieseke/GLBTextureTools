@@ -381,6 +381,7 @@ class GTT_CleanMaterialsOperator(bpy.types.Operator):
     def execute(self, context):
         material_functions.clean_empty_materials()
         material_functions.clean_no_user_materials()
+        material_functions.use_nodes()
 
         return {'FINISHED'}
 
@@ -442,7 +443,7 @@ class GTT_OpenTexturesFolderOperator(bpy.types.Operator):
         filepath = bpy.data.filepath
         directory = os.path.dirname(filepath) + self.texture_path
         
-        if filepath is not "":
+        if filepath != "":
             subprocess.call("explorer " + directory, shell=True)
         else:
             self.report({'INFO'}, 'You need to save Blend file first !')

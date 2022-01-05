@@ -351,14 +351,17 @@ class PbrBakeUtilities(BakeUtilities):
             return False
         
         print("\n Checking " + material.name + "\n")
-        
+
         # check if renderer not set to optix
         self.setup_engine()
+
+        # check if selected to active is on
+        bpy.context.scene.render.bake.use_selected_to_active = False
 
         # check if pbr node exists
         check_ok = node_functions.check_pbr(self.parent_operator,material) and node_functions.check_is_org_material(self.parent_operator,material)
         if not check_ok :
-            self.parent_operator.report({'INFO'}, "Material " + material.name + " has errors !")
+            self.parent_operator.report({'INFO'}, "Material " + material.name + " has no PBR Node !")
             return False
         
         # copy texture nodes if they are linked multiple times

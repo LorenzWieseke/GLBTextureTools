@@ -49,7 +49,7 @@ def blur_bake_image(noisy_image,color_image):
 
     filePath = bpy.data.filepath
     path = os.path.dirname(filePath)
-    scene = bpy.data.scenes["Scene"]
+    scene = bpy.context.scene
     scene.render.filepath = path + "\\textures\\GLBTexTool\\" + noisy_image.name + "_Denoise"
     bpy.ops.render.render(write_still=True)
     
@@ -120,7 +120,7 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
     filePath = bpy.data.filepath
     path = os.path.dirname(filePath)
 
-    scene = bpy.data.scenes["Scene"]
+    scene = bpy.context.scene
     scene.render.filepath = path + "\\textures\\GLBTexTool\\" + noisy_image.name + "_Denoise"
     bpy.ops.render.render(write_still=True)
     
@@ -347,7 +347,7 @@ def remove_unused_nodes(material):
 
     for node in unconnected_nodes:
         nodes.remove(node)
-    # print(connected_nodes)
+
 
 def remove_double_linking(material,texture_node):
     color_output = texture_node.outputs["Color"]
@@ -368,7 +368,7 @@ def remove_double_linking(material,texture_node):
             make_link(material,new_texture_node.outputs["Color"],link.to_socket)
             
             # remap texture mapping
-            if len(org_vector_input.links) is not 0:
+            if len(org_vector_input.links) != 0:
                 new_vector_input = new_texture_node.inputs["Vector"]
                 tex_transform_socket = org_vector_input.links[0].from_socket
                 make_link(material,tex_transform_socket,new_vector_input)
