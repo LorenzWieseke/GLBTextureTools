@@ -47,28 +47,31 @@ def blur_bake_image(noisy_image,color_image):
     bpy.context.scene.render.resolution_x = noisy_image.size[0]
     bpy.context.scene.render.resolution_y = noisy_image.size[1]
 
-    filePath = bpy.data.filepath
-    path = os.path.dirname(filePath)
+    
+    # set output path
     scene = bpy.context.scene
-    scene.render.filepath = path + "\\textures\\GLBTexTool\\" + noisy_image.name + "_Denoise"
-    bpy.ops.render.render(write_still=True)
-    
-    # set output image format
-    file_extention = ""
+    outputImagePath = constants.Path_List.get_textures_dir()
+
+    # set image format and quality
     scene.render.image_settings.file_format = bpy.context.scene.img_file_format
-    if bpy.context.scene.img_file_format == "JPEG":
-        file_extention = "jpg"
-    else:
-        file_extention = scene.render.image_settings.file_format.lower()
+    scene.render.image_settings.quality = 100
+     
+    scene.render.filepath = os.path.join(outputImagePath,noisy_image.name + "_Denoise_AO")
+    bpy.ops.render.render(write_still=True)
+
+    if bpy.context.scene.img_file_format == 'JPEG':
+        file_extention = '.jpg'
+    elif bpy.context.scene.img_file_format == 'PNG':
+        file_extention = '.png'
+    elif bpy.context.scene.img_file_format == 'HDR':
+        file_extention = '.hdr'
     
-    blur_image_path = scene.render.filepath + "." + file_extention
-        
     # cleanup
     comp_nodes = [image_node,color_image_node,blur_node,comp_node]
     for node in comp_nodes:
         tree.nodes.remove(node)
-    
-    return blur_image_path
+
+    return scene.render.filepath + file_extention
 
 def comp_ai_denoise(noisy_image, nrm_image, color_image):
 
@@ -117,30 +120,31 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
     bpy.context.scene.render.resolution_x = noisy_image.size[0]
     bpy.context.scene.render.resolution_y = noisy_image.size[1]
 
-    filePath = bpy.data.filepath
-    path = os.path.dirname(filePath)
-
+    # set output path
     scene = bpy.context.scene
-    scene.render.filepath = path + "\\textures\\GLBTexTool\\" + noisy_image.name + "_Denoise"
-    bpy.ops.render.render(write_still=True)
-    
-    # set output image format
-    file_extention = ""
+    outputImagePath = constants.Path_List.get_textures_dir()
+
+    # set image format and quality
     scene.render.image_settings.file_format = bpy.context.scene.img_file_format
     scene.render.image_settings.quality = 100
-    if bpy.context.scene.img_file_format == "JPEG":
-        file_extention = "jpg"
-    else:
-        file_extention = scene.render.image_settings.file_format.lower()
-    
-    denoised_image_path = scene.render.filepath + "." + file_extention
+     
+    scene.render.filepath = os.path.join(outputImagePath,noisy_image.name + "_Denoise_LM")
+    bpy.ops.render.render(write_still=True)
 
+    if bpy.context.scene.img_file_format == 'JPEG':
+        file_extention = '.jpg'
+    elif bpy.context.scene.img_file_format == 'PNG':
+        file_extention = '.png'
+    elif bpy.context.scene.img_file_format == 'HDR':
+        file_extention = '.hdr'
+    
     # cleanup
     comp_nodes = [image_node, nrm_image_node,color_image_node, denoise_node, comp_node]
     for node in comp_nodes:
         tree.nodes.remove(node)
 
-    return denoised_image_path
+    return scene.render.filepath + file_extention
+
 
 # -----------------------CHECKING --------------------#
 

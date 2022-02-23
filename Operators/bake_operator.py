@@ -24,21 +24,12 @@ class GTT_BakeOperator(bpy.types.Operator):
     def execute(self,context):
 
         # ----------------------- VAR  --------------------#
-        active_object = context.object
         selected_objects = context.selected_objects
         bake_settings = context.scene.bake_settings
         texture_settings = context.scene.texture_settings
         self.deselect_everything_but_mesh(selected_objects)
 
         # ----------------------- CHECK SELECTION  --------------------#
-
-        if len(selected_objects) > 0:
-            active_object = selected_objects[0]
-            
-        if active_object.type != 'MESH':
-            self.report({'INFO'}, 'No Mesh selected')
-            return {'FINISHED'}
-            
         for obj in selected_objects:
             if obj.type != 'MESH':
                 obj.select_set(False)

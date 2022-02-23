@@ -25,29 +25,33 @@ def get_all_images_in_ui_list():
     return images_found
 
 
-def save_image(image):
+def save_image(image,save_internally=False):
 
-    filePath = bpy.data.filepath
-    path = os.path.dirname(filePath)
+    if save_internally:
+        image.pack()
+    else:
+        filePath = bpy.data.filepath
+        path = os.path.dirname(filePath)
 
+        if not os.path.exists(path + "/textures"):
+            os.mkdir(path + "/textures")
 
-    if not os.path.exists(path + "/textures"):
-        os.mkdir(path + "/textures")
+        if not os.path.exists(path + "/textures/GLBTexTool"):
+            os.mkdir(path + "/textures/GLBTexTool")
 
-    if not os.path.exists(path + "/textures/GLBTexTool"):
-        os.mkdir(path + "/textures/GLBTexTool")
+        if not os.path.exists(path + "/textures/GLBTexTool/" + str(image.size[0])):
+            os.mkdir(path + "/textures/GLBTexTool/" + str(image.size[0]))
 
-    if not os.path.exists(path + "/textures/GLBTexTool/" + str(image.size[0])):
-        os.mkdir(path + "/textures/GLBTexTool/" + str(image.size[0]))
+        # file format
+        image.file_format = bpy.context.scene.img_file_format
 
-    # file format
-    image.file_format = bpy.context.scene.img_file_format
-
-    # change path
-    savepath = path + "\\textures\\GLBTexTool\\" + str(image.size[0]) + "\\" + image.name + "." + image.file_format
-
-    image.filepath_raw = savepath
-    image.save()
+        # change path
+        savepath = path + "\\textures\\GLBTexTool\\" + str(image.size[0]) + "\\" + image.name + "." + image.file_format
+        # image.use_fake_user = True
+        image.filepath_raw = savepath
+        image.save()
+        
+    
 
 def create_image(image_name, image_size):
     D = bpy.data

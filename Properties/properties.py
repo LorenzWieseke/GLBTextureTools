@@ -25,8 +25,9 @@ bpy.types.Scene.img_file_format = EnumProperty(
     description='Set file format for output image',
     default='JPEG',
     items=[
-         ('JPEG', 'JPEG', 'Set image format to jpg'),
-        ('PNG', 'PNG', 'Set image format to jpg'),
+         ('JPEG', 'JPEG', 'JPG is a lossy format with no additional alpha channel, use for color maps'),
+        ('PNG', 'PNG', 'PNG is lossless and has option for alpha channel, use for normal maps'),
+        ('HDR', 'HDR', 'HDR is a 32 bit format, use if you need more details or see color banding'),
     ])
 
 bpy.types.Scene.affect = EnumProperty(

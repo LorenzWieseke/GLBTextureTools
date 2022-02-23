@@ -1,3 +1,5 @@
+import os
+import bpy
 class Node_Types: 
     image_texture = 'TEX_IMAGE'
     pbr_node = 'BSDF_PRINCIPLED'
@@ -28,5 +30,10 @@ class Material_Suffix:
         "ao" : "_AO",
         "lightmap" : "_AO"
     }
+class Path_List:
+    def get_project_dir():
+        return os.path.dirname(bpy.data.filepath)
 
+    def get_textures_dir():
+        return os.path.join(os.path.dirname(bpy.data.filepath),'textures','GLBTexTool')
 
