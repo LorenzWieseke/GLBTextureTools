@@ -129,6 +129,7 @@ def comp_ai_denoise(noisy_image, nrm_image, color_image):
     scene.render.image_settings.quality = 100
      
     scene.render.filepath = os.path.join(outputImagePath,noisy_image.name + "_Denoise_LM")
+    print("Starting Denoise")
     bpy.ops.render.render(write_still=True)
 
     if bpy.context.scene.img_file_format == 'JPEG':

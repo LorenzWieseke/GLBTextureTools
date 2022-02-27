@@ -260,7 +260,7 @@ class BakeUtilities():
         # no denoise
         if not denoise:              
             channel = bake_type[0]
-            image = self.bake_image(self.bake_images,channel,denoise)
+            image = self.bake_images(self.bake_image,channel,denoise)
             image_functions.save_image(image,False)
             return
 
@@ -274,6 +274,37 @@ class BakeUtilities():
             self.baked_images.append(baked_channel_image)
             
         self.denoise()
+
+    def change_image_in_nodes(self,image):
+        for image_texture_node in self.image_texture_nodes:
+            if image_texture_node.name == self.tex_node_name:
+                image_texture_node.image = image
+
+    def bake_images(self, image, channel,denoise):
+        if channel == "NRM":
+            print("Baking Normal Pass")
+            self.C.scene.cycles.samples = 1
+            self.O.object.bake(type="NORMAL", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+        
+        if channel == "COLOR":
+            print("Baking Color Pass")
+            self.C.scene.cycles.samples = 1
+            self.O.object.bake(type="DIFFUSE", pass_filter={'COLOR'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+
+        if channel == "AO":
+            if not denoise:
+                self.O.object.bake('INVOKE_DEFAULT',type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+            else:
+                self.O.object.bake(type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+        
+        if channel == "NOISY":
+            print("Baking Diffuse Pass")
+            if not denoise:
+                self.O.object.bake('INVOKE_DEFAULT',type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+            else:        
+                self.O.object.bake(type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
+
+        return image
 
     def denoise(self):
         # denoise
@@ -291,34 +322,6 @@ class BakeUtilities():
             self.bake_image.filepath = blur_image_path
             self.bake_image.source = "FILE"
             self.change_image_in_nodes(self.bake_image)
-
-    def change_image_in_nodes(self,image):
-        for image_texture_node in self.image_texture_nodes:
-            if image_texture_node.name == self.tex_node_name:
-                image_texture_node.image = image
-
-    def bake_images(self, image, channel,denoise):
-        if channel == "NRM":
-            self.C.scene.cycles.samples = 1
-            self.O.object.bake(type="NORMAL", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-        
-        if channel == "COLOR":
-            self.C.scene.cycles.samples = 1
-            self.O.object.bake(type="DIFFUSE", pass_filter={'COLOR'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-
-        if channel == "AO":
-            if not denoise:
-                self.O.object.bake('INVOKE_DEFAULT',type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-            else:
-                self.O.object.bake(type="AO", use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-        
-        if channel == "NOISY":
-            if not denoise:
-                self.O.object.bake('INVOKE_DEFAULT',type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-            else:        
-                self.O.object.bake(type="DIFFUSE", pass_filter={'DIRECT', 'INDIRECT'}, use_clear=self.bake_settings.bake_image_clear, margin=self.bake_settings.bake_margin)
-
-        return image
 
     def add_lightmap_flag(self):
          for obj in self.selected_objects:
