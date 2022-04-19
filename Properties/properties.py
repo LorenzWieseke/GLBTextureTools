@@ -32,11 +32,12 @@ bpy.types.Scene.img_file_format = EnumProperty(
 
 bpy.types.Scene.affect = EnumProperty(
     name='Affect',
-    description='Define if operator should run on active, selected, visible or all materials in scene.',
-    default='active',
+    description='Define if operator should run on active material, all materials on selected object, all materials on visible objects or all materials in scene.',
+    default='linked',
     items=[
-         ('active', 'ACTIVE', 'Change only active materials'),
+        ('active', 'ACTIVE', 'Change only active materials'),
         ('selected', 'SELECTED', 'Change all selected materials'),
+        ('linked', 'LINKED MATERIALS', 'Change all materials on selected objects and all objects that share these materials'),
         ('visible', 'VISIBLE', 'Change all visible materials'),
         ('scene', 'SCENE', 'Change all materials in scene'),
     ])

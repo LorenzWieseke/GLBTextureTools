@@ -2,7 +2,9 @@ import bpy
 from bpy import context
 from . import node_functions
 from . import material_functions
+from . import object_functions
 from . import constants
+from . import basic_functions
 import mathutils
 
 
@@ -31,14 +33,23 @@ def switch_baked_material(show_bake_material,affect):
         objects = [ob for ob in bpy.context.view_layer.objects if ob.visible_get()]
     elif affect == 'scene':
         objects = bpy.context.scene.objects
-     
+    elif affect == 'linked':
+        objects = []
+        selected_objects = bpy.context.selected_editable_objects
+        selected_materials = material_functions.get_selected_materials(selected_objects)
+        
+        for material in selected_materials:
+            objs = object_functions.select_obj_by_mat(material)
+            objects.append(objs)
+        objects = basic_functions.flatten(objects)
+        objects = basic_functions.remove_duplicate(objects)
+             
     
     all_mats = bpy.data.materials
     baked_mats = [mat for mat in all_mats if material_name_suffix in mat.name]
     
 
     for obj in objects:   
-
         if current_bake_type != "pbr":
             baked_ao_flag = getattr(obj,"ao_map_name") != '' or getattr(obj,"lightmap_name") != '' 
             if not baked_ao_flag:

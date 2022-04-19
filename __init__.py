@@ -16,7 +16,7 @@ bl_info = {
     "author": "Lorenz Wieseke",
     "description": "",
     "blender": (3, 0, 0),
-    "version": (0,1,2),
+    "version": (0,1,3),
     "location": "3DView > Properties (N -KEY) > GLB Texture Tools",
     "warning": "",
     "wiki_url":    "https://govie.de/en/tutorials-blender/?utm_source=blender-add-on&utm_medium=button#glb_texture_tools",

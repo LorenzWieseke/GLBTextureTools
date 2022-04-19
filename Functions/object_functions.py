@@ -17,13 +17,18 @@ def select_object(self, obj):
     except:
         self.report({'INFO'}, "Object not in View Layer")
 
-def select_obj_by_mat(self, mat):
+def select_obj_by_mat(mat,self=None):
     D = bpy.data
+    result = []
     for obj in D.objects:
         if obj.type == "MESH":
             object_materials = [slot.material for slot in obj.material_slots]
             if mat in object_materials:
-                select_object(self, obj)
+                result.append(obj)
+                if (self):
+                    select_object(self, obj)
+
+    return result
 
 # TODO - save objects in array, unlink objects, apply scale and link them back
 def apply_scale_on_multiuser():

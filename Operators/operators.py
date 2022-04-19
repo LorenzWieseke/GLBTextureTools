@@ -110,7 +110,7 @@ class GTT_GetMaterialByTextureOperator(bpy.types.Operator):
                         images = [node.image for node in tex_nodes]
                         if sel_image_texture in images:
                             materials_found.append(mat.name)
-                            object_functions.select_obj_by_mat(self,mat)
+                            object_functions.select_obj_by_mat(mat,self)
                     
 
         return {"FINISHED"}
