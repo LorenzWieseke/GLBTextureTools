@@ -335,7 +335,7 @@ class GTT_RemoveAOOperator(bpy.types.Operator):
     bl_label = "Clean AO map"
 
     def execute(self, context):
-        visibility_functions.switch_baked_material(False,"scene")
+        # visibility_functions.switch_baked_material(False,"scene")
         bpy.ops.material.clean_materials()
         
         bake_settings = context.scene.bake_settings

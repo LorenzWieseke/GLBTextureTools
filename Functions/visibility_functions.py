@@ -50,10 +50,10 @@ def switch_baked_material(show_bake_material,affect):
     
 
     for obj in objects:   
-        if current_bake_type != "pbr":
-            baked_ao_flag = getattr(obj,"ao_map_name") != '' or getattr(obj,"lightmap_name") != '' 
-            if not baked_ao_flag:
-                continue
+        # if current_bake_type != "pbr":
+            # baked_ao_flag = getattr(obj,"ao_map_name") != '' or getattr(obj,"lightmap_name") != '' 
+            # if not baked_ao_flag:
+            #     continue
         
         for slot in obj.material_slots:
             if show_bake_material:

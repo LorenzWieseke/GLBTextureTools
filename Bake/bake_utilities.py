@@ -63,6 +63,15 @@ class BakeUtilities():
     def set_active_uv_to_lightmap(self):
         bpy.ops.object.set_active_uv(uv_slot=2)
 
+    def checkPBR(self):
+         for material in self.selected_materials:  
+            self.active_material = material       
+            # check if pbr node exists
+            check_ok = node_functions.check_pbr(self.parent_operator,material)
+            if not check_ok :
+                self.parent_operator.report({'INFO'}, "Material " + material.name + " has no PBR Node !")
+            return check_ok
+
     def unwrap_selected(self):
         if self.bake_settings.unwrap:
             self.O.object.add_uv(uv_name=self.bake_settings.uv_name)

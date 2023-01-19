@@ -36,8 +36,8 @@ class GTT_BakeOperator(bpy.types.Operator):
 
             if len(obj.material_slots) == 0:
                 self.report({'INFO'}, 'No Material on ' + obj.name)
-                return {'FINISHED'}
 
+            context.view_layer.objects.active = context.selected_objects[0]
         # ----------------------- SET VISIBLITY TO MATERIAL  --------------------#
         texture_settings.preview_bake_texture = False
     

@@ -10,6 +10,8 @@ def bake_texture(self, selected_objects, bake_settings):
     # ----------------------- CREATE INSTANCE --------------------#
     lightmap_utilities = bake_utilities.BakeUtilities(parent_operator, selected_objects, bake_settings)  
 
+    if not lightmap_utilities.checkPBR():
+        return
     
     # -----------------------SET LIGHTMAP UV--------------------#
     lightmap_utilities.set_active_uv_to_lightmap()
