@@ -103,7 +103,7 @@ class GTT_Bake_Settings(bpy.types.PropertyGroup):
     bake_margin:IntProperty(default=2)
     unwrap_margin:FloatProperty(default=0.002)
     unwrap: BoolProperty(default= True)
-    denoise: BoolProperty(default=True)
+    denoise: BoolProperty(default=False)
     show_texture_after_bake: BoolProperty(default=True)
     bake_object_index:IntProperty(name = "Index for baked Objects", default = 0)
 

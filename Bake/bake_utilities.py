@@ -7,6 +7,7 @@ from .. Functions import constants
 from .. Functions import visibility_functions
 from .. Functions import material_functions
 
+blender_version = bpy.app.version
 
 class BakeUtilities():
     C = bpy.context
@@ -144,6 +145,27 @@ class BakeUtilities():
         # remove duplicate entries
         self.selected_materials = list(set(bake_materials))       
 
+    def add_gltf_material_output_node(self, material):
+        nodes = material.node_tree.nodes
+        gltf_material_output_node = nodes.get('Group')
+        if gltf_material_output_node is None:
+            # Get the reference to the current area
+            previous_area = 'VIEW_3D'
+
+            # Switch to the Shader Editor layout
+            bpy.context.area.type = 'NODE_EDITOR'
+            bpy.context.space_data.tree_type = 'ShaderNodeTree'
+
+            # call operator
+            bpy.ops.node.gltf_settings_node_operator()
+
+            # Switch back to the previous area
+            bpy.context.area.type = previous_area
+        
+            gltf_material_output_node = nodes.get('Group')
+
+        return gltf_material_output_node
+
 
     def add_gltf_settings_node(self, material):
         nodes = material.node_tree.nodes
@@ -241,7 +263,12 @@ class BakeUtilities():
             if self.bake_settings.ao_bake:
                 uv_node = self.add_uv_node(material)
                 image_texture_node = self.add_image_texture_node(material)
-                gltf_settings_node = self.add_gltf_settings_node(material)
+
+                if blender_version <= (3, 3):
+                    gltf_settings_node = self.add_gltf_settings_node(material)
+                else:
+                    gltf_settings_node = self.add_gltf_material_output_node(material)
+
 
                 # position
                 self.position_gltf_setup_nodes(material,uv_node,image_texture_node,gltf_settings_node)
