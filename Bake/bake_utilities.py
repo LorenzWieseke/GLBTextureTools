@@ -147,24 +147,30 @@ class BakeUtilities():
 
     def add_gltf_material_output_node(self, material):
         nodes = material.node_tree.nodes
-        gltf_material_output_node = nodes.get('Group')
-        if gltf_material_output_node is None:
-            # Get the reference to the current area
-            previous_area = 'VIEW_3D'
-
-            # Switch to the Shader Editor layout
-            bpy.context.area.type = 'NODE_EDITOR'
-            bpy.context.space_data.tree_type = 'ShaderNodeTree'
-
-            # call operator
-            bpy.ops.node.gltf_settings_node_operator()
-
-            # Switch back to the previous area
-            bpy.context.area.type = previous_area
         
-            gltf_material_output_node = nodes.get('Group')
+        name = "glTF Material Output"
+        gltf_node_group = bpy.data.node_groups.new(name, 'ShaderNodeTree')
+        gltf_node_group.inputs.new("NodeSocketFloat", "Occlusion")
+        thicknessFactor  = gltf_node_group.inputs.new("NodeSocketFloat", "Thickness")
+        thicknessFactor.default_value = 0.0
+        gltf_node_group.nodes.new('NodeGroupOutput')
+        gltf_node_group_input = gltf_node_group.nodes.new('NodeGroupInput')
+        specular = gltf_node_group.inputs.new("NodeSocketFloat", "Specular")
+        specular.default_value = 1.0
+        specularColor = gltf_node_group.inputs.new("NodeSocketColor", "Specular Color")
+        specularColor.default_value = [1.0,1.0,1.0,1.0]
+        gltf_node_group_input.location = -200, 0
+        
 
-        return gltf_material_output_node
+        gltf_settings_node = nodes.get(name)
+        if gltf_settings_node is None:
+            gltf_settings_node = nodes.new('ShaderNodeGroup')
+            gltf_settings_node.name = name
+            gltf_settings_node.node_tree = bpy.data.node_groups[name]
+        
+        return gltf_settings_node
+
+
 
 
     def add_gltf_settings_node(self, material):

@@ -57,9 +57,12 @@ def switch_baked_material(show_bake_material,affect):
         
         for slot in obj.material_slots:
             if show_bake_material:
-                    for baked_mat in baked_mats:                      
-                        if baked_mat.name == slot.material.name + material_name_suffix + obj.bake_version:
-                            slot.material = baked_mat
+                    for baked_mat in baked_mats:     
+                        try:                 
+                            if baked_mat.name == slot.material.name + material_name_suffix + obj.bake_version:
+                                slot.material = baked_mat
+                        except:
+                            pass
 
             else:
                 if (material_name_suffix in slot.material.name):

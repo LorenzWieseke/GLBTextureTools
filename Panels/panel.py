@@ -74,7 +74,10 @@ class GTT_BakeTexturePanel(bpy.types.Panel):
                 row.operator("object.select_lightmap_objects",text="",icon="RESTRICT_SELECT_OFF")
 
                 if bake_settings.lightmap_bake:
-                    box.prop(scene.world.node_tree.nodes["Background"].inputs[1],'default_value',text="World Influence")
+                    try:
+                        box.prop(scene.world.node_tree.nodes["Background"].inputs[1],'default_value',text="World Influence")
+                    except:
+                        pass
 
                 if bake_settings.ao_bake:
                     box.prop(scene.world.light_settings,"distance",text="AO Distance")
